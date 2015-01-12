@@ -20,6 +20,7 @@ from django.utils.translation import ugettext as _
       <form id="login_form" method="post" action="login_post">
 
         <fieldset>
+          <input type="hidden" name="csrfmiddlewaretoken" value="${ csrf }" />
           <legend class="sr">${_("Required Information to Sign In to edX Studio")}</legend>
 
           <ol class="list-input">
