@@ -75,13 +75,13 @@ class @HTMLEditingDescriptor
         },
         # Disable visual aid on borderless table.
         visual: false,
-        plugins: "textcolor, link, image, codemirror",
+        plugins: "textcolor, link, image, codemirror, directionality",
         codemirror: {
           path: "#{baseUrl}/js/vendor"
         },
         image_advtab: true,
         # We may want to add "styleselect" when we collect all styles used throughout the LMS
-        toolbar: "formatselect | fontselect | bold italic underline forecolor wrapAsCode | bullist numlist outdent indent blockquote | link unlink image | code",
+        toolbar: "formatselect | fontselect | bold italic underline forecolor wrapAsCode | bullist numlist outdent indent blockquote | link unlink image | code | ltr rtl",
         block_formats: interpolate("%(paragraph)s=p;%(preformatted)s=pre;%(heading1)s=h1;%(heading2)s=h2;%(heading3)s=h3", {
             paragraph: gettext("Paragraph"),
             preformatted: gettext("Preformatted"),
