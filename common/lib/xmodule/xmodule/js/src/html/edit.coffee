@@ -73,13 +73,13 @@ class @HTMLEditingDescriptor
         },
         # Disable visual aid on borderless table.
         visual: false,
-        plugins: "textcolor, link, image, codemirror",
+        plugins: "textcolor, link, image, codemirror, directionality",
         codemirror: {
           path: "#{baseUrl}/js/vendor"
         },
         image_advtab: true,
         # We may want to add "styleselect" when we collect all styles used throughout the LMS
-        toolbar: "formatselect | fontselect | bold italic underline forecolor wrapAsCode | bullist numlist outdent indent blockquote | link unlink image | code",
+        toolbar: "formatselect | fontselect | bold italic underline forecolor wrapAsCode | bullist numlist outdent indent blockquote | link unlink image | code | ltr rtl",
         block_formats: interpolate("%(paragraph)s=p;%(preformatted)s=pre;%(heading1)s=h1;%(heading2)s=h2;%(heading3)s=h3", {
             paragraph: gettext("Paragraph"),
             preformatted: gettext("Preformatted"),
@@ -91,7 +91,7 @@ class @HTMLEditingDescriptor
         height: '400px',
         menubar: false,
         statusbar: false,
-        
+
         # Necessary to avoid stripping of style tags.
         valid_children : "+body[style]",
 
@@ -99,7 +99,7 @@ class @HTMLEditingDescriptor
         valid_elements: "*[*]",
         extended_valid_elements: "*[*]",
         invalid_elements: "",
-        
+
         setup: @setupTinyMCE,
         # Cannot get access to tinyMCE Editor instance (for focusing) until after it is rendered.
         # The tinyMCE callback passes in the editor as a parameter.
