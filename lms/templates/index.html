@@ -1,81 +1,67 @@
 <%! from django.utils.translation import ugettext as _ %>
 
 <%! from django.core.urlresolvers import reverse %>
+<%! from time import strftime %>
+<%! from universities.models import University %>
 <%inherit file="main.html" />
 <%namespace name='static' file='static_content.html'/>
-
-<%! from microsite_configuration import microsite %>
-
-<%
-  homepage_overlay_html = microsite.get_value('homepage_overlay_html')
-
-  ## To display a welcome video, change False to True, and add a YouTube ID (11 chars, eg "123456789xX") in the following line
-  show_homepage_promo_video = microsite.get_value('show_homepage_promo_video', False)
-  homepage_promo_video_youtube_id = microsite.get_value('homepage_promo_video_youtube_id', "your-youtube-id")
-
-  show_partners = microsite.get_value('show_partners', True)
-
-%>
+<%doc> The title block is commented because defined elsewhere
+<%block name="title"><title>FUN - France Université Numérique</title></%block>
+</%doc>
 
 <section class="home">
   <header>
     <div class="outer-wrapper">
-      <div class="title">
-        <hgroup>
-          % if homepage_overlay_html:
-            ${homepage_overlay_html}
-          % else:
-            % if self.stanford_theme_enabled():
-              <h1>${_("Free courses from <strong>{university_name}</strong>").format(university_name="Stanford")}</h1>
-              <h2>${_("For anyone, anywhere, anytime")}</h2>
-            % else:
-              ## Translators: 'Open edX' is a brand, please keep this untranslated. See http://openedx.org for more information.
-              <h1>${_("Welcome to Open edX!")}</h1>
-              ## Translators: 'Open edX' is a brand, please keep this untranslated. See http://openedx.org for more information.
-              <h2>${_("It works! This is the default homepage for this Open edX instance.")}</h2>
-            % endif
-          % endif
-        </hgroup>
 
-      </div>
-
-      % if show_homepage_promo_video:
-        <a href="#video-modal" class="media" rel="leanModal">
-          <div class="hero">
-            <div class="play-intro"></div>
-          </div>
-        </a>
-      % endif
     </div>
+
+  <div class="tagline">
+    <div class="main">${_("Live the FUN experience")}</div>
+    <div class="secondary">
+      ${_("Find French university and school courses, where and whenever you want")}
+    </div>
+  </div>
   </header>
+
   <section class="container">
     <section class="highlighted-courses">
 
-      % if settings.FEATURES.get('COURSES_ARE_BROWSABLE'):
-        <section class="courses">
-            <ul class="courses-listing">
-            %for course in courses:
-              <li class="courses-listing-item">
-                <%include file="course.html" args="course=course" />
+      <section class="courses-overview">
+        <div class="als-container" id="universities-slider">
+          <span class="als-prev"><img src="${static.url('themes/fun/images/previous.png')}" alt="previous" title="previous" /></span>
+          <div class="als-viewport">
+            <ul class="als-wrapper">
+              % for university in University.objects.filter(featured=True):
+              <li class="als-item">
+                <a href="${ university.get_absolute_url() }">
+                  %if university.logo:
+                  <img src="${ university.logo.url }" alt="${ university.name }" title="${ university.name }" />
+                  %endif
+                </a>
               </li>
-            %endfor
+              % endfor
             </ul>
-        </section>
-      % endif
-
+          </div>
+          <span class="als-next"><img src="${static.url('themes/fun/images/next.png')}" alt="next" title="next" /></span>
+        </div>
+      </section>
     </section>
   </section>
-</section>
 
-<section id="video-modal" class="modal home-page-video-modal video-modal">
-  <div class="inner-wrapper">
-    <%
-      youtube_video_id = homepage_promo_video_youtube_id
-      if self.stanford_theme_enabled():
-        youtube_video_id = "2gmreZObCY4"
-    %>
-    <iframe width="640" height="360" src="//www.youtube.com/embed/${youtube_video_id}?showinfo=0" frameborder="0" allowfullscreen></iframe>
-  </div>
+  <section class="discover">
+    <div class="discover-inner">
+      <div class="course-highlight">
+         <iframe frameborder="0" width="440" height="248" src="//www.dailymotion.com/embed/video/x2e4j6u"></iframe>
+      </div>
+      <div class="discover-description">
+        <h1>${_("Discover the courses on FUN")}</h1>
+        <p>${_("All courses present on FUN are designed for students and everyone wishing to learn. Follow these courses interactively and collaboratively, at your rhythm.")}</p>
+
+        <p>${_(u"These courses are designed by French university and school teachers and address varied subjects, such as history, mathematics, health, philosophy, law, technology…")}</p>
+        <a class="button fun-button-discover" href="${reverse('fun-courses-index')}">${_("All courses")} +</a>
+      </div>
+    </div>
+  </section>
 </section>
 
 <%block name="js_extra">
@@ -86,6 +72,19 @@
          }
       })
    </script>
+
+    <script type="text/javascript" src="${static.url('themes/fun/js/vendor/jquery.als-1.2.min.js')}" ></script>
+    <script type="text/javascript">
+      $(document).ready(function(){
+        $("#universities-slider").als({
+          circular: "yes",
+          visible_items: 5,
+          scrolling_items: 2,
+          autoscroll: "yes",
+          interval: 5000
+        });
+      });
+    </script>
 </%block>
 
 % if show_signup_immediately is not UNDEFINED:

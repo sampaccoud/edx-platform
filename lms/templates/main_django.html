@@ -2,10 +2,9 @@
 {% load compressed %}{% load sekizai_tags i18n microsite %}{% load url from future %}{% load staticfiles %}
 <html lang="{{LANGUAGE_CODE}}">
 <head>
-  <meta charset="UTF-8">
   {% block title %}<title>{% platform_name %}</title>{% endblock %}
 
- <link rel="icon" type="image/x-icon" href="{% favicon_path %}" />
+  <link rel="icon" type="image/x-icon" href="{% static "themes/fun/images/favicon.ico" %}" />
 
   {% compressed_css 'style-vendor' %}
   {% compressed_css 'style-app' %}
@@ -20,7 +19,7 @@
   {% block headextra %}{% endblock %}
   {% render_block "css" %}
 
-  {% microsite_css_overrides_file %}
+  {% include "theme-head-extra.html" %}
 
   <!--[if lt IE 9]>
   <script src="{% static 'js/html5shiv.js' %}"></script>
@@ -30,25 +29,14 @@
 </head>
 
 <body class="{% block bodyclass %}{% endblock %} lang_{{LANGUAGE_CODE}}">
-  <a class="nav-skip" href="{% block nav_skip %}#content{% endblock %}">{% trans "Skip to main content" %}</a>
-  {% with course=request.course %}
-    {% if IS_EDX_DOMAIN %}
-      {% include "navigation-edx.html" %}
-    {% else %}
-      {% include "navigation.html" %}
-    {% endif %}
-  {% endwith %}
-  <div class="content-wrapper" id="content">
+  <a class="nav-skip" href="#content">{% trans "Skip to this view's content" %}</a>
+  {% include "theme-header.html" %}
+  <section class="content-wrapper" id="content">
     {% block body %}{% endblock %}
     {% block bodyextra %}{% endblock %}
-  </div>
-  {% if IS_REQUEST_IN_MICROSITE %}
-  {# For now we don't support overriden Django templates in microsites. Leave footer blank for now which is better than saying Edx.#}
-  {% elif IS_EDX_DOMAIN %}
-    {% include "footer-edx-new.html" %}
-  {% else %}
-    {% include "footer.html" %}
-  {% endif %}
+  </section>
+
+  {% include "theme-footer.html" %}
 
   {% compressed_js 'application' %}
   {% compressed_js 'module-js' %}
@@ -56,14 +44,3 @@
   {% render_block "js" %}
 </body>
 </html>
-
-{% comment %}
-  This is a django template version of our main page from which all
-  other pages inherit. This file should be rewritten to reflect any
-  changes in main.html! Files used by {% include %} can be written
-  as mako templates.
-
-  Inheriting from this file allows us to include apps that use the
-  django templating system without rewriting all of their views in
-  mako.
-{% endcomment %}
