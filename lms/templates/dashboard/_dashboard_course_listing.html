@@ -1,19 +1,18 @@
-<%page args="course, enrollment, show_courseware_link, cert_status, show_email_settings, course_mode_info, show_refund_option, is_paid_course, is_course_blocked, verification_status, course_requirements" />
+<%
+  ## We override tis template to change dates format. We do not want UTC time so we call start_datetime_text and end_datetime_text with SHORT_DATE parameter
+%>
+<%page args="course, enrollment, show_courseware_link, cert_status, show_email_settings, course_mode_info, show_refund_option, is_paid_course, is_course_blocked, verification_status" />
 
+<%! from django.utils.translation import ugettext as _ %>
 <%!
-from django.utils.translation import ugettext as _
-from django.utils.translation import ungettext
-from django.core.urlresolvers import reverse
-from markupsafe import escape
-from courseware.courses import course_image_url, get_course_about_section
-from course_modes.models import CourseMode
-from student.helpers import (
-  VERIFY_STATUS_NEED_TO_VERIFY,
-  VERIFY_STATUS_SUBMITTED,
-  VERIFY_STATUS_APPROVED,
-  VERIFY_STATUS_MISSED_DEADLINE,
-  VERIFY_STATUS_NEED_TO_REVERIFY
-)
+  from django.core.urlresolvers import reverse
+  from courseware.courses import course_image_url, get_course_about_section
+  from student.helpers import (
+    VERIFY_STATUS_NEED_TO_VERIFY,
+    VERIFY_STATUS_SUBMITTED,
+    VERIFY_STATUS_APPROVED,
+    VERIFY_STATUS_MISSED_DEADLINE
+  )
 %>
 
 <%
@@ -31,18 +30,10 @@ from student.helpers import (
 
 <li class="course-item">
   % if settings.FEATURES.get('ENABLE_VERIFIED_CERTIFICATES'):
-    <% course_verified_certs = CourseMode.enrollment_mode_display(enrollment.mode, verification_status.get('status')) %>
-    <%
-        mode_class = course_verified_certs.get('display_mode', '')
-        if mode_class != '':
-            mode_class = ' ' + mode_class ;
-    %>
+    <article class="course ${enrollment.mode}">
   % else:
-    <% mode_class = '' %>
-   % endif
-
-  <article class="course${mode_class}">
-
+    <article class="course">
+  %endif
     <%
       course_target = reverse('info', args=[course.id.to_deprecated_string()])
     %>
@@ -50,7 +41,7 @@ from student.helpers import (
     % if show_courseware_link:
       % if not is_course_blocked:
         <a href="${course_target}" class="cover">
-        <img src="${course_image_url(course)}" alt="${_('{course_number} {course_name} Home Page').format(course_number=course.number, course_name=course.display_name_with_default) |h}" />
+        <img src="${course_image_url(course)}" alt="${_('{course_number} {course_name} Cover Image').format(course_number=course.number, course_name=course.display_name_with_default) |h}" />
       </a>
         % else:
         <a class="fade-cover">
@@ -62,28 +53,63 @@ from student.helpers import (
         <img src="${course_image_url(course)}" alt="${_('{course_number} {course_name} Cover Image').format(course_number=course.number, course_name=course.display_name_with_default) | h}" />
       </div>
     % endif
-
     % if settings.FEATURES.get('ENABLE_VERIFIED_CERTIFICATES'):
-      <span class="sts-enrollment" title="${course_verified_certs.get('enrollment_title')}">
-        <span class="label">${_("Enrolled as: ")}</span>
-        % if course_verified_certs.get('show_image'):
-            <img class="deco-graphic" src="${static.url('images/verified-ribbon.png')}" alt="${course_verified_certs.get('image_alt')}" />
+      % if enrollment.mode == "verified":
+        % if settings.FEATURES.get('SEPARATE_VERIFICATION_FROM_PAYMENT'):
+          % if verification_status.get('status') in [VERIFY_STATUS_NEED_TO_VERIFY, VERIFY_STATUS_SUBMITTED]:
+            <span class="sts-enrollment" title="${_("Your verification is pending")}">
+              <span class="label">${_("Enrolled as: ")}</span>
+              <img class="deco-graphic" src="${static.url('images/verified-ribbon.png')}" alt="ID Verified Pending Ribbon/Badge" />
+              <div class="sts-enrollment-value">${_("Verified Pending")}</div>
+            </span>
+          % elif verification_status.get('status') == VERIFY_STATUS_APPROVED:
+            <span class="sts-enrollment" title="${_("You're enrolled as a verified student")}">
+              <span class="label">${_("Enrolled as: ")}</span>
+              <img class="deco-graphic" src="${static.url('images/verified-ribbon.png')}" alt="ID Verified Ribbon/Badge" />
+              <div class="sts-enrollment-value">${_("Verified")}</div>
+            </span>
+          % else:
+            <span class="sts-enrollment" title="${_("You're enrolled as an honor code student")}">
+              <span class="label">${_("Enrolled as: ")}</span>
+              <div class="sts-enrollment-value">${_("Honor Code")}</div>
+            </span>
+          % endif
+        % else:
+          <span class="sts-enrollment" title="${_("You're enrolled as a verified student")}">
+            <span class="label">${_("Enrolled as: ")}</span>
+            <img class="deco-graphic" src="${static.url('images/verified-ribbon.png')}" alt="ID Verified Ribbon/Badge" />
+            <div class="sts-enrollment-value">${_("Verified")}</div>
+          </span>
         % endif
-        <div class="sts-enrollment-value">${course_verified_certs.get('enrollment_value')}</div>
+      % elif enrollment.mode == "honor":
+        <span class="sts-enrollment" title="${_("You're enrolled as an honor code student")}">
+          <span class="label">${_("Enrolled as: ")}</span>
+          <div class="sts-enrollment-value">${_("Honor Code")}</div>
+        </span>
+      % elif enrollment.mode == "audit":
+        <span class="sts-enrollment" title="${_("You're auditing this course")}">
+          <span class="label">${_("Enrolled as: ")}</span>
+          <div class="sts-enrollment-value">${_("Auditing")}</div>
+        </span>
+      % elif enrollment.mode == "professional":
+        <span class="sts-enrollment" title="${_("You're enrolled as a professional education student")}">
+        <span class="label">${_("Enrolled as: ")}</span>
+        <div class="sts-enrollment-value">${_("Professional Ed")}</div>
       </span>
+      % endif
     % endif
 
     <section class="info">
       <hgroup>
         <p class="date-block">
         % if course.has_ended():
-        ${_("Course Completed - {end_date}").format(end_date=course.end_datetime_text("DATE_TIME"))}
+        ${_("Course Completed - {end_date}").format(end_date=course.end_datetime_text("SHORT_DATE"))}
         % elif course.has_started():
-        ${_("Course Started - {start_date}").format(start_date=course.start_datetime_text("DATE_TIME"))}
+        ${_("Course Started - {start_date}").format(start_date=course.start_datetime_text("SHORT_DATE"))}
         % elif course.start_date_is_still_default: # Course start date TBD
         ${_("Course has not yet started")}
         % else:   # hasn't started yet
-        ${_("Course Starts - {start_date}").format(start_date=course.start_datetime_text("DATE_TIME"))}
+        ${_("Course Starts - {start_date}").format(start_date=course.start_datetime_text("SHORT_DATE"))}
         % endif
         </p>
         <h2 class="university">${get_course_about_section(course, 'university')}</h2>
@@ -104,40 +130,33 @@ from student.helpers import (
       <%include file='_dashboard_certificate_information.html' args='cert_status=cert_status,course=course, enrollment=enrollment'/>
       % endif
 
-      % if verification_status.get('status') in [VERIFY_STATUS_NEED_TO_VERIFY, VERIFY_STATUS_SUBMITTED, VERIFY_STATUS_APPROVED, VERIFY_STATUS_NEED_TO_REVERIFY] and not is_course_blocked:
-      <div class="message message-status wrapper-message-primary is-shown">
-        % if verification_status['status'] == VERIFY_STATUS_NEED_TO_VERIFY:
-          <div class="verification-reminder">
-            % if verification_status['days_until_deadline'] is not None:
-              <h4 class="message-title">${_('Verification not yet complete.')}</h4>
-              <p class="message-copy">${ungettext(
-                'You only have {days} day left to verify for this course.',
-                'You only have {days} days left to verify for this course.',
-                verification_status['days_until_deadline']
-              ).format(days=verification_status['days_until_deadline'])}</p>
-            % else:
-              <h4 class="message-title">${_('Almost there!')}</h4>
-              <p class="message-copy">${_('You still need to verify for this course.')}</p>
+      % if settings.FEATURES.get('SEPARATE_VERIFICATION_FROM_PAYMENT'):
+        % if verification_status.get('status') in [VERIFY_STATUS_NEED_TO_VERIFY, VERIFY_STATUS_SUBMITTED, VERIFY_STATUS_APPROVED] and not is_course_blocked:
+        <div class="message message-status is-shown">
+          % if verification_status['status'] == VERIFY_STATUS_NEED_TO_VERIFY:
+            <div class="verification-reminder">
+              % if verification_status['days_until_deadline'] is not None:
+                <h4 class="message-title">${_('Verification not yet complete.')}</h4>
+                <p class="message-copy">${_('You only have {days} days left to verify for this course.').format(days=verification_status['days_until_deadline'])}</p>
+              % else:
+                <h4 class="message-title">${_('Almost there!')}</h4>
+                <p class="message-copy">${_('You still need to verify for this course.')}</p>
+              % endif
+            </div>
+            <div class="verification-cta">
+              <a href="#" class="cta">${_('Verify Now')}</a>
+            </div>
+          % elif verification_status['status'] == VERIFY_STATUS_SUBMITTED:
+            <h4 class="message-title">${_('You have already verified your ID!')}</h4>
+            <p class="message-copy">${_('Thanks for your patience as we process your request.')}</p>
+          % elif verification_status['status'] == VERIFY_STATUS_APPROVED:
+            <h4 class="message-title">${_('You have already verified your ID!')}</h4>
+            % if verification_status['verification_good_until'] is not None:
+              <p class="message-copy">${_('Your verification status is good until {date}.').format(date=verification_status['verification_good_until'])}
             % endif
-          </div>
-          <div class="verification-cta">
-            <a href="${reverse('verify_student_verify_later', kwargs={'course_id': unicode(course.id)})}" class="cta" data-course-id="${course.id | h}">${_('Verify Now')}</a>
-          </div>
-        % elif verification_status['status'] == VERIFY_STATUS_SUBMITTED:
-          <h4 class="message-title">${_('You have already verified your ID!')}</h4>
-          <p class="message-copy">${_('Thanks for your patience as we process your request.')}</p>
-        % elif verification_status['status'] == VERIFY_STATUS_APPROVED:
-          <h4 class="message-title">${_('You have already verified your ID!')}</h4>
-          % if verification_status['verification_good_until'] is not None:
-            <p class="message-copy">${_('Your verification status is good until {date}.').format(date=verification_status['verification_good_until'])}
           % endif
-        % elif verification_status['status'] == VERIFY_STATUS_NEED_TO_REVERIFY:
-          <h4 class="message-title">${_('Your verification will expire soon!')}</h4>
-          ## Translators: start_link and end_link will be replaced with HTML tags;
-          ## please do not translate these.
-          <p class="message-copy">${_('Your current verification will expire before the verification deadline for this course. {start_link}Re-verify your identity now{end_link} using a webcam and a government-issued ID.').format(start_link='<a href="{href}">'.format(href=reverse('verify_student_reverify')), end_link='</a>')}</p>
+        </div>
         % endif
-      </div>
       % endif
 
       % if course_mode_info['show_upsell'] and not is_course_blocked:
@@ -145,7 +164,7 @@ from student.helpers import (
 
             <div class="wrapper-tip">
               <h4 class="message-title">
-                <i class="icon fa fa-caret-down ui-toggle-expansion"></i>
+                <i class="icon-caret-down ui-toggle-expansion"></i>
                   <span class="value">${_("Challenge Yourself!")}</span>
               </h4>
               <p class="message-copy">${_("Take this course as an ID-verified student.")}</p>
@@ -156,10 +175,10 @@ from student.helpers import (
 
               <ul class="actions message-actions">
                 <li class="action-item">
-                  <a class="action action-upgrade" href="${reverse('verify_student_upgrade_and_verify', kwargs={'course_id': unicode(course.id)})}" data-course-id="${course.id | h}" data-user="${user.username | h}">
-                    <img class="deco-graphic" src="${static.url('images/vcert-ribbon-s.png')}" alt="${_("ID Verified Ribbon/Badge")}">
+                  <a class="action action-upgrade" href="${reverse('course_modes_choose', kwargs={'course_id': course.id.to_deprecated_string()})}?upgrade=True">
+                    <img class="deco-graphic" src="${static.url('images/vcert-ribbon-s.png')}" alt="ID Verified Ribbon/Badge">
                     <span class="wrapper-copy">
-                      <span class="copy" id="upgrade-to-verified">${_("Upgrade to Verified Track")}</span>
+                      <span class="copy" id="upgrade-to-verified" data-course-id="${course.id | h}" data-user="${user.username | h}">${_("Upgrade to Verified Track")}</span>
                     </span>
                   </a>
                 </li>
@@ -169,23 +188,14 @@ from student.helpers import (
       %endif
       % if is_course_blocked:
         <p id="block-course-msg" class="course-block">
-          ${_("You can no longer access this course because payment has not yet been received. "
-              "You can {contact_link_start}contact the account holder{contact_link_end} "
-              "to request payment, or you can "
-              "{unenroll_link_start}unenroll{unenroll_link_end} "
-              "from this course").format(
-            contact_link_start='<a href="#">',
-            contact_link_end='</a>',
-            unenroll_link_start=(
-              '<a id="unregister_block_course" rel="leanModal" '
-              'data-course-id="{course_id}" data-course-number="{course_number}" '
-              'href="#unenroll-modal">'.format(
-                course_id=escape(course.id),
-                course_number=escape(course.number),
-              )
-            ),
-            unenroll_link_end="</a>",
-          )}
+            ${_("You can no longer access this course because payment has not yet been received. You "
+      "can {link_start}contact the account holder{link_end} to request payment, or you can "
+      "{unenroll_link_start}unenroll{unenroll_link_end} from this course").format(
+            link_start='<a href="#">',
+          link_end='</a>',
+          unenroll_link_start='<a id="unregister_block_course" rel="leanModal" data-course-id="${course.id | h}" data-course-number="${course.number | h}" href="#unenroll-modal">',
+          unenroll_link_end="</a>"
+      )}
         </p>
       %endif
 
@@ -281,19 +291,6 @@ from student.helpers import (
 
 
   </section>
-  % if course_requirements:
-  ## Multiple pre-requisite courses are not supported on frontend that's why we are pulling first element
-  <% prc_target = reverse('about_course', args=[unicode(course_requirements['courses'][0]['key'])]) %>
-  <section class="prerequisites">
-    <p class="tip">
-      ${_("You must successfully complete {link_start}{prc_display}{link_end} before you begin this course.").format(
-          link_start='<a href="{}">'.format(prc_target),
-          link_end='</a>',
-          prc_display=course_requirements['courses'][0]['display'],
-        )}
-    </p>
-  </section>
-  % endif
 </article>
 </article>
 </li>
