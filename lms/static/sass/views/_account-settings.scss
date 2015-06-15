@@ -1,7 +1,7 @@
 // lms - application - account settings
 // ====================
 
-// Table of Contents 
+// Table of Contents
 // * +Container - Account Settings
 // * +Main - Header
 // * +Settings Section
@@ -9,11 +9,13 @@
 
 // +Container - Account Settings
 .wrapper-account-settings {
-    @extend .container;
-    padding-top: ($baseline*2);
 
+    padding-top: ($baseline*2);
+    width: 88%;
+    margin-right: auto;
+    margin-left: auto;
     .account-settings-container {
-        padding: 0; 
+        padding: 0;
     }
 
     .ui-loading-indicator,
