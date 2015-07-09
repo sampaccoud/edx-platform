@@ -86,7 +86,6 @@ def delete_course_and_groups(course_key, user_id):
         except Exception as err:
             log.error("Error in deleting course groups for {0}: {1}".format(course_key, err))
 
-
 def get_lms_link_for_item(location, preview=False):
     """
     Returns an LMS link to the course with a jump_to to the provided location.
@@ -95,21 +94,22 @@ def get_lms_link_for_item(location, preview=False):
     :param preview: True if the preview version of LMS should be returned. Default value is false.
     """
     assert(isinstance(location, UsageKey))
-
     if settings.LMS_BASE is None:
         return None
 
-    if preview:
-        lms_base = settings.FEATURES.get('PREVIEW_LMS_BASE')
+    if settings.FEATURES['USE_MICROSITES']:
+        lms_base = settings.MICROSITE_CONFIGURATION[location.org]['SITE_NAME']
     else:
-        lms_base = settings.LMS_BASE
+        if preview:
+            lms_base = settings.FEATURES.get('PREVIEW_LMS_BASE')
+        else:
+            lms_base = settings.LMS_BASE
 
     return u"//{lms_base}/courses/{course_key}/jump_to/{location}".format(
         lms_base=lms_base,
         course_key=location.course_key.to_deprecated_string(),
         location=location.to_deprecated_string(),
     )
-
 
 def get_lms_link_for_about_page(course_key):
     """
@@ -135,6 +135,9 @@ def get_lms_link_for_about_page(course_key):
 
         # Strip off https:// (or http://) to be consistent with the formatting of LMS_BASE.
         about_base = re.sub(r"^https?://", "", about_base)
+
+    elif settings.FEATURES['USE_MICROSITES']:
+        about_base = settings.MICROSITE_CONFIGURATION[location.org]['SITE_NAME']
 
     elif settings.LMS_BASE is not None:
         about_base = settings.LMS_BASE

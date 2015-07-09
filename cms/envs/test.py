@@ -241,7 +241,7 @@ MICROSITE_CONFIGURATION = {
     }
 }
 MICROSITE_ROOT_DIR = COMMON_ROOT / 'test' / 'test_microsites'
-FEATURES['USE_MICROSITES'] = True
+FEATURES['USE_MICROSITES'] = False
 
 # For consistency in user-experience, keep the value of this setting in sync with
 # the one in lms/envs/test.py
