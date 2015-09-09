@@ -289,8 +289,8 @@ define(['js/capa/drag_and_drop/draggable_events', 'js/capa/drag_and_drop/draggab
 
                 draggableObj.iconEl.appendTo(draggableObj.containerEl);
 
-                draggableObj.iconWidth = draggableObj.iconEl.width();
-                draggableObj.iconHeight = draggableObj.iconEl.height();
+                draggableObj.iconWidth = draggableObj.iconEl.width() + (draggableObj.iconElPadding * 2) + 2;
+                draggableObj.iconHeight = draggableObj.iconEl.height() + 2;
                 draggableObj.iconWidthSmall = draggableObj.iconWidth;
                 draggableObj.iconHeightSmall = draggableObj.iconHeight;
 
