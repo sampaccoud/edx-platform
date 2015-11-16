@@ -19,6 +19,15 @@ dir_rtl = 'rtl' if get_language_bidi() else 'ltr'
     <meta name="viewport" content="width=device-width, initial-scale=1">
     % endif
 
+    ## We override this template to:
+    ## - insert the RSS feed
+    ## - add the platform node name
+    ## - remove the google-site-verification meta name
+    <%! from django.core.urlresolvers import reverse %>
+    <%! import platform %>
+    <meta name="platform.node" CONTENT="${platform.node()}">
+    <link rel="alternate" type="application/rss+xml" title="${_('FUN courses RSS feed')}" href="${reverse('fun-courses:feed')}" />
+
 ## Define a couple of helper functions to make life easier when
 ## embedding theme conditionals into templates. All inheriting
 ## templates have access to these functions, and we can import these
@@ -119,7 +128,6 @@ dir_rtl = 'rtl' if get_language_bidi() else 'ltr'
   <%include file="widgets/segment-io.html" />
 
   <meta name="path_prefix" content="${EDX_ROOT_URL}">
-  <meta name="google-site-verification" content="_mipQ4AtZQDNmbtOkwehQDOgCxUUV2fb_C0b6wbiRHY" />
 
   <%include file="${google_analytics_file}" />
 
