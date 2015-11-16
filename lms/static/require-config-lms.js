@@ -69,6 +69,10 @@
             "catch": 'js/vendor/ova/catch/js/catch',
             "handlebars": 'js/vendor/ova/catch/js/handlebars-1.1.2',
             // end of files needed by OVA
+
+            // FUN-specific
+            'libcast': 'fun/js/libcast',
+            'videojs-fun': 'fun/js/vendor/videojs/video-fun',
         },
         shim: {
             "annotator_1.2.9": {
@@ -149,6 +153,11 @@
                 ]
             },
             // End of needed by OVA
+
+            // FUN-specific
+            'videojs-fun': {
+                exports: 'videojs_fun'
+            },
         }
     };
 
