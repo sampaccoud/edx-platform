@@ -8,6 +8,10 @@ import json
 
 dir_rtl = 'rtl' if get_language_bidi() else 'ltr'
 %>
+
+## We override this file from edx-platform studio to:
+## - add teacher-sandox CSS file
+
 <!doctype html>
 <!--[if lte IE 9]><html class="ie9 lte9" lang="${LANGUAGE_CODE}"><![endif]-->
 <!--[if !IE]><<!--><html lang="${LANGUAGE_CODE}"><!--<![endif]-->
@@ -34,6 +38,10 @@ dir_rtl = 'rtl' if get_language_bidi() else 'ltr'
     <%static:css group='style-main'/>
 
     <%include file="widgets/segment-io.html" />
+
+% if settings.ENVIRONMENT == 'ketch':
+  <link rel="stylesheet" type="text/css" href="${static.url('fun/css/teacher-sandbox.css')}" />
+% endif
 
     <%block name="header_extras"></%block>
   </head>
