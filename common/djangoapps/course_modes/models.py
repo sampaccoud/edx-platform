@@ -73,7 +73,7 @@ class CourseMode(models.Model):
     NO_ID_PROFESSIONAL_MODE = "no-id-professional"
     CREDIT_MODE = "credit"
 
-    DEFAULT_MODE = Mode(HONOR, _('Honor Code Certificate'), 0, '', 'usd', None, None, None)
+    DEFAULT_MODE = Mode(HONOR, _('Honor Code Certificate'), 0, '', 'EUR', None, None, None)
     DEFAULT_MODE_SLUG = HONOR
 
     # Modes that allow a student to pursue a verified certificate
