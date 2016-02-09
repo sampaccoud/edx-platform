@@ -1518,8 +1518,8 @@ class PaidCourseRegistration(OrderItem):
         ### handle default arguments for mode_slug, cost, currency
         course_mode = CourseMode.mode_for_course(course_id, mode_slug)
         if not course_mode:
-            # user could have specified a mode that's not set, in that case return the DEFAULT_MODE
-            course_mode = CourseMode.DEFAULT_MODE
+            # user could have specified a mode that's not set, in that case return the default mode
+            course_mode = CourseMode.get_default_mode()
         if not cost:
             cost = course_mode.min_price
         if not currency:
@@ -1688,8 +1688,8 @@ class CourseRegCodeItem(OrderItem):
         ### handle default arguments for mode_slug, cost, currency
         course_mode = CourseMode.mode_for_course(course_id, mode_slug)
         if not course_mode:
-            # user could have specified a mode that's not set, in that case return the DEFAULT_MODE
-            course_mode = CourseMode.DEFAULT_MODE
+            # user could have specified a mode that's not set, in that case return the default mode
+            course_mode = CourseMode.get_default_mode()
         if not cost:
             cost = course_mode.min_price
         if not currency:

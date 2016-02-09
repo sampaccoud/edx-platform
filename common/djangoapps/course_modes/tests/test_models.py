@@ -6,13 +6,15 @@ Replace this with more appropriate tests for your application.
 """
 
 from datetime import datetime, timedelta
-import pytz
 import ddt
+import pytz
 
+from django.test import TestCase
+from django.test.utils import override_settings
+
+from course_modes.models import CourseMode, Mode
 from opaque_keys.edx.locations import SlashSeparatedCourseKey
 from opaque_keys.edx.locator import CourseLocator
-from django.test import TestCase
-from course_modes.models import CourseMode, Mode
 
 
 @ddt.ddt
@@ -45,7 +47,7 @@ class CourseModeModelTest(TestCase):
         """
         # shouldn't be able to find a corresponding course
         modes = CourseMode.modes_for_course(self.course_key)
-        self.assertEqual([CourseMode.DEFAULT_MODE], modes)
+        self.assertEqual([CourseMode.get_default_mode()], modes)
 
     def test_nodes_for_course_single(self):
         """
@@ -78,12 +80,13 @@ class CourseModeModelTest(TestCase):
         self.assertEqual(mode2, CourseMode.mode_for_course(self.course_key, u'verified'))
         self.assertIsNone(CourseMode.mode_for_course(self.course_key, 'DNE'))
 
+    @override_settings(PAID_COURSE_REGISTRATION_CURRENCY=['PKR', 'Rs'])
     def test_min_course_price_for_currency(self):
         """
         Get the min course price for a course according to currency
         """
         # no modes, should get 0
-        self.assertEqual(0, CourseMode.min_course_price_for_currency(self.course_key, 'usd'))
+        self.assertEqual(0, CourseMode.min_course_price_for_currency(self.course_key, 'PKR'))
 
         # create some modes
         mode1 = Mode(u'honor', u'Honor Code Certificate', 10, '', 'usd', None, None, None)
@@ -101,7 +104,7 @@ class CourseModeModelTest(TestCase):
         expired_mode.expiration_datetime = datetime.now(pytz.UTC) + timedelta(days=-1)
         expired_mode.save()
         modes = CourseMode.modes_for_course(self.course_key)
-        self.assertEqual([CourseMode.DEFAULT_MODE], modes)
+        self.assertEqual([CourseMode.get_default_mode()], modes)
 
         mode1 = Mode(u'honor', u'Honor Code Certificate', 0, '', 'usd', None, None, None)
         self.create_mode(mode1.slug, mode1.name, mode1.min_price, mode1.suggested_prices)
@@ -116,7 +119,7 @@ class CourseModeModelTest(TestCase):
         self.assertEqual([expired_mode_value, mode1], modes)
 
         modes = CourseMode.modes_for_course(SlashSeparatedCourseKey('TestOrg', 'TestCourse', 'TestRun'))
-        self.assertEqual([CourseMode.DEFAULT_MODE], modes)
+        self.assertEqual([CourseMode.get_default_mode()], modes)
 
     def test_verified_mode_for_course(self):
         self.create_mode('verified', 'Verified Certificate')
@@ -212,7 +215,7 @@ class CourseModeModelTest(TestCase):
 
         # Check that we get a default mode for when no course mode is available
         self.assertEqual(len(all_modes[other_course_key]), 1)
-        self.assertEqual(all_modes[other_course_key][0], CourseMode.DEFAULT_MODE)
+        self.assertEqual(all_modes[other_course_key][0], CourseMode.get_default_mode())
 
     @ddt.data('', 'no-id-professional', 'professional', 'verified')
     def test_course_has_professional_mode(self, mode):

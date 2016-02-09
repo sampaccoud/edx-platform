@@ -1019,3 +1019,5 @@ CREDIT_PROVIDER_TIMESTAMP_EXPIRATION = 15 * 60
 ################################ Deprecated Blocks Info ################################
 
 DEPRECATED_BLOCK_TYPES = ['peergrading', 'combinedopenended']
+
+PAID_COURSE_REGISTRATION_CURRENCY = ['usd', '$']

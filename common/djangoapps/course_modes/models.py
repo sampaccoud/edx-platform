@@ -4,6 +4,7 @@ Add and create new modes for running courses on this particular LMS
 import pytz
 from datetime import datetime
 
+from django.conf import settings
 from django.db import models
 from collections import namedtuple, defaultdict
 from django.utils.translation import ugettext_lazy as _
@@ -73,7 +74,6 @@ class CourseMode(models.Model):
     NO_ID_PROFESSIONAL_MODE = "no-id-professional"
     CREDIT_MODE = "credit"
 
-    DEFAULT_MODE = Mode(HONOR, _('Honor Code Certificate'), 0, '', 'usd', None, None, None)
     DEFAULT_MODE_SLUG = HONOR
 
     # Modes that allow a student to pursue a verified certificate
@@ -85,6 +85,14 @@ class CourseMode(models.Model):
     class Meta:
         """ meta attributes of this model """
         unique_together = ('course_id', 'mode_slug', 'currency')
+
+    @classmethod
+    def get_default_mode(cls):
+        """Returns a default mode of price 0 in current currecy."""
+        #CMS do not have this setting
+        currency = settings.PAID_COURSE_REGISTRATION_CURRENCY
+        return Mode(cls.DEFAULT_MODE_SLUG, _('Honor Code Certificate'), 0, '',
+            currency[0], None, None, None)
 
     @classmethod
     def all_modes_for_courses(cls, course_id_list):
@@ -106,7 +114,7 @@ class CourseMode(models.Model):
         # Assign default modes if nothing available in the database
         missing_courses = set(course_id_list) - set(modes_by_course.keys())
         for course_id in missing_courses:
-            modes_by_course[course_id] = [cls.DEFAULT_MODE]
+            modes_by_course[course_id] = [cls.get_default_mode()]
 
         return modes_by_course
 
@@ -189,7 +197,6 @@ class CourseMode(models.Model):
 
         """
         now = datetime.now(pytz.UTC)
-
         found_course_modes = cls.objects.filter(course_id=course_id)
 
         # Filter out expired course modes if include_expired is not set
@@ -197,7 +204,6 @@ class CourseMode(models.Model):
             found_course_modes = found_course_modes.filter(
                 Q(expiration_datetime__isnull=True) | Q(expiration_datetime__gte=now)
             )
-
         # Credit course modes are currently not shown on the track selection page;
         # they're available only when students complete a course.  For this reason,
         # we exclude them from the list if we're only looking for selectable modes
@@ -207,7 +213,7 @@ class CourseMode(models.Model):
 
         modes = ([mode.to_tuple() for mode in found_course_modes])
         if not modes:
-            modes = [cls.DEFAULT_MODE]
+            modes = [cls.get_default_mode()]
 
         return modes
 
@@ -487,7 +493,8 @@ class CourseMode(models.Model):
         """
         Returns the minimum price of the course in the appropriate currency over all the course's
         non-expired modes.
-        If there is no mode found, will return the price of DEFAULT_MODE, which is 0
+        If there is no mode found, will return the result of get_default_mode function
+        which if a mode of price 0 in the currency set in settings.
         """
         modes = cls.modes_for_course(course_id)
         return min(mode.min_price for mode in modes if mode.currency == currency)
