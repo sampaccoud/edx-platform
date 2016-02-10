@@ -680,6 +680,23 @@ def course_info(request, course_id):
     """
     course_key = SlashSeparatedCourseKey.from_deprecated_string(course_id)
 
+    # link to where the student should go to enroll in the course:
+    # about page if there is not marketing site, SITE_NAME if there is
+    url_to_enroll = reverse(course_about, args=[course_id])
+    if settings.FEATURES.get('ENABLE_MKTG_SITE'):
+        url_to_enroll = marketing_link('COURSES')
+
+    if not request.user.is_authenticated():
+        return redirect(url_to_enroll)
+
+    course = get_course(course_key)
+    staff_access = has_access(request.user, 'staff', course)
+    now = datetime.now(UTC())
+    effective_start = _adjust_start_date_for_beta_testers(request.user, course, course_key)
+
+    if not staff_access and now < effective_start:
+        return redirect(url_to_enroll)
+
     with modulestore().bulk_operations(course_key):
         course = get_course_with_access(request.user, 'load', course_key)
 
@@ -693,15 +710,8 @@ def course_info(request, course_id):
         if request.user.is_authenticated() and survey.utils.must_answer_survey(course, request.user):
             return redirect(reverse('course_survey', args=[unicode(course.id)]))
 
-        staff_access = has_access(request.user, 'staff', course)
         masquerade = setup_masquerade(request, course_key, staff_access)  # allow staff to masquerade on the info page
         studio_url = get_studio_url(course, 'course_info')
-
-        # link to where the student should go to enroll in the course:
-        # about page if there is not marketing site, SITE_NAME if there is
-        url_to_enroll = reverse(course_about, args=[course_id])
-        if settings.FEATURES.get('ENABLE_MKTG_SITE'):
-            url_to_enroll = marketing_link('COURSES')
 
         show_enroll_banner = request.user.is_authenticated() and not CourseEnrollment.is_enrolled(request.user, course.id)
 
@@ -717,8 +727,6 @@ def course_info(request, course_id):
             'url_to_enroll': url_to_enroll,
         }
 
-        now = datetime.now(UTC())
-        effective_start = _adjust_start_date_for_beta_testers(request.user, course, course_key)
         if not in_preview_mode() and staff_access and now < effective_start:
             # Disable student view button if user is staff and
             # course is not yet visible to students.
