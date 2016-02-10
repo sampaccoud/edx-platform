@@ -116,9 +116,9 @@ class PDFInvoice(object):
         self.item_id = item_id
         self.date = ModuleI18nService().strftime(date, 'SHORT_DATE')
         self.is_invoice = is_invoice
-        self.total_cost = '{currency}{amount:.2f}'.format(currency=self.currency, amount=total_cost)
-        self.payment_received = '{currency}{amount:.2f}'.format(currency=self.currency, amount=payment_received)
-        self.balance = '{currency}{amount:.2f}'.format(currency=self.currency, amount=balance)
+        self.total_cost = u'{currency}{amount:.2f}'.format(currency=self.currency, amount=total_cost)
+        self.payment_received = u'{currency}{amount:.2f}'.format(currency=self.currency, amount=payment_received)
+        self.balance = u'{currency}{amount:.2f}'.format(currency=self.currency, amount=balance)
 
         # initialize the pdf variables
         self.margin = 15 * mm
@@ -263,9 +263,9 @@ class PDFInvoice(object):
                 '',
                 Paragraph(row_item['item_description'], getSampleStyleSheet()['Normal']),
                 row_item['quantity'],
-                '{currency}{list_price:.2f}'.format(list_price=row_item['list_price'], currency=self.currency),
-                '{currency}{discount:.2f}'.format(discount=row_item['discount'], currency=self.currency),
-                '{currency}{item_total:.2f}'.format(item_total=row_item['item_total'], currency=self.currency),
+                u'{currency}{list_price:.2f}'.format(list_price=row_item['list_price'], currency=self.currency),
+                u'{currency}{discount:.2f}'.format(discount=row_item['discount'], currency=self.currency),
+                u'{currency}{item_total:.2f}'.format(item_total=row_item['item_total'], currency=self.currency),
                 ''
             ])
 
