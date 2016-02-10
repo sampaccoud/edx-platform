@@ -13162,7 +13162,7 @@ msgstr "Mettre à jour le message"
 
 #: lms/templates/discussion/_underscore_templates.html
 msgid "Show Comments (%(num_comments)s)"
-msgstr "Affichier (%(num_comments)s) Commentaires"
+msgstr "Afficher (%(num_comments)s) Commentaires"
 
 #: lms/templates/discussion/_underscore_templates.html
 msgid "Add a comment"
