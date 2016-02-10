@@ -3726,7 +3726,7 @@ msgid ""
 "a limited number of languages."
 msgstr ""
 "La langue utilisée au travers du site. Le site est actuellement disponible "
-"dans un nombre limité de langue."
+"dans un nombre limité de langues."
 
 #: lms/static/js/student_account/views/account_settings_factory.js
 msgid "Country or Region"
