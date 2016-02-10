@@ -373,7 +373,7 @@ def account_settings_context(request):
             }, 'year_of_birth': {
                 'options': year_of_birth_options,
             }, 'preferred_language': {
-                'options': settings.ALL_LANGUAGES,
+                'options': [(lang[0], _(lang[1])) for lang in settings.ALL_LANGUAGES],  # pylint: disable=translation-of-non-string
             }
         },
         'platform_name': settings.PLATFORM_NAME,
