@@ -1,6 +1,6 @@
 """ Commerce app. """
 from django.conf import settings
-from ecommerce_api_client.client import EcommerceApiClient
+#from ecommerce_api_client.client import EcommerceApiClient
 from eventtracking import tracker
 
 
@@ -21,11 +21,28 @@ def is_commerce_service_configured():
     return bool(settings.ECOMMERCE_API_URL and settings.ECOMMERCE_API_SIGNING_KEY)
 
 
+#def ecommerce_api_client(user):
+#    """ Returns an E-Commerce API client setup with authentication for the specified user. """
+#    return EcommerceApiClient(settings.ECOMMERCE_API_URL,
+#            settings.ECOMMERCE_API_SIGNING_KEY,
+#            user.username,
+#            user.profile.name,
+#            user.email,
+#            tracking_context=create_tracking_context(user))
+
+from edx_rest_api_client.client import EdxRestApiClient
+
 def ecommerce_api_client(user):
     """ Returns an E-Commerce API client setup with authentication for the specified user. """
-    return EcommerceApiClient(settings.ECOMMERCE_API_URL, settings.ECOMMERCE_API_SIGNING_KEY, user.username,
-                              user.profile.name, user.email, tracking_context=create_tracking_context(user))
-
+    #import ipdb; ipdb.set_trace()
+    return EdxRestApiClient(settings.ECOMMERCE_API_URL,
+                            settings.ECOMMERCE_API_SIGNING_KEY,
+                            user.username,
+                            user.profile.name,
+                            user.email,
+                            tracking_context=create_tracking_context(user),
+                            issuer=settings.JWT_ISSUER,
+                            expires_in=settings.JWT_EXPIRATION)
 
 # this is here to support registering the signals in signals.py
 from commerce import signals  # pylint: disable=unused-import
