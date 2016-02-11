@@ -77,6 +77,14 @@
           <% } %>
         <% } %>
       </ul>
+
+      <p><%= gettext("Once payment has been processed, you commit to taking a remotely proctored exam following the protocol defined for this course. Please check that your equipment is compatible with the proctoring system of our ProctorU provider by clicking <a href='http://www.proctoru.com/testitout/' target='_blank'>this link</a>.") %></p>
+      <p>
+        <input id="understand1" class="understand-requirement" type="checkbox" style="display: inline;" name="r1"/> <label for="understand1" style="display: inline;"><%- gettext("I wish to take an exam to validate this course and obtain a certificate") %></label><br />
+        <input id="understand2" class="understand-requirement" type="checkbox" style="display: inline;" /> <label for="understand2" style="display: inline;"><%- gettext("I can schedule the remote exam at the dates defined for this course") %></label><br />
+        <input id="understand3" class="understand-requirement" type="checkbox" style="display: inline;" /> <label for="understand3" style="display: inline;"><%- gettext("My computer equipment is compatible with the exam proctoring tools") %></label><br />
+        <input id="understand4" class="understand-requirement" type="checkbox" style="display: inline;" /> <label for="understand4" style="display: inline;"><%= gettext("I accept the terms of service of the proctoring service described <a href='{url}' target='_blank'>here</a>.").replace("{url}", "/tos#proctoring-tos") %></label>
+      </p>
     </div>
     <% } %>
 
@@ -87,13 +95,6 @@
     </div>
     <% } else if ( alreadyVerified && verificationGoodUntil ) { %>
     <div class="container register is-verified">
-      <h3 class="title"><%- gettext( "You have already verified your ID!" ) %></h3>
-      <p>
-        <%= _.sprintf(
-        gettext( "Your verification status is good until %(verificationGoodUntil)s." ),
-         { verificationGoodUntil: verificationGoodUntil }
-        ) %>
-      </p>
     </div>
     <% } %>
 
@@ -101,7 +102,7 @@
   <div class="payment-buttons nav-wizard is-ready center">
     <input type="hidden" name="contribution" value="<%- minPrice %>" />
     <div class="purchase">
-      <p class="product-info"><span class="product-name"></span> <%- gettext( "price" ) %>: <span class="price">$<%- minPrice %></span></p>
+      <p class="product-info"><span class="product-name"></span> <%- gettext( "price" ) %>: <span class="price">€<%- minPrice %></span></p>
     </div>
     <div class="pay-options">
       <%

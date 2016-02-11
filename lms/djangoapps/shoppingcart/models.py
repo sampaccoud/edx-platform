@@ -1928,7 +1928,6 @@ class CertificateItem(OrderItem):
     def additional_instruction_text(self):
         verification_reminder = ""
         is_enrollment_mode_verified = self.course_enrollment.is_verified_enrollment()  # pylint: disable=E1101
-
         if is_enrollment_mode_verified:
             domain = microsite.get_value('SITE_NAME', settings.SITE_NAME)
             path = reverse('verify_student_verify_now', kwargs={'course_id': unicode(self.course_id)})
