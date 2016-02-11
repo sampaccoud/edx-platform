@@ -20789,3 +20789,32 @@ msgid ""
 msgstr ""
 "Une nouvelle révision a été créée : Fusion entre la révision #%(r1)d et la "
 "révision #%(r2)d"
+
+
+msgid "Verified certificate"
+msgstr "Souscrire au parcours vérifié"
+
+msgid "Celebrate your achievement through a verified certificate. This document will help you improve your employability and promote your career."
+msgstr "Valorisez vos nouvelles connaissances grâce à un certificat vérifié. Ce document vous permettra d’améliorer votre employabilité et de promouvoir votre carrière."
+
+msgid "The benefits of a verified certificate:"
+msgstr "Les bénéfices d'un certificat vérifié :"
+
+msgid "Get a certificate from the institution who created the MOOC."
+msgstr "Recevez un certificat émis par l'établissement créateur du MOOC."
+
+msgid "Add this certificate to your resume, your cover letter or share it directly on social networks"
+msgstr "Ajoutez ce certificat à votre CV, à votre lettre de motivation ou partagez-le directement sur les réseaux sociaux."
+
+msgid "You subscribed a certified exam for this course"
+msgstr "Vous avez souscrit à un examen payant pour ce cours"
+
+
+msgid "Are you sure you want to unenroll from the certified course <strong>{course}</strong><br><br> ?"
+msgstr "Êtes-vous sûr de vouloir vous désinscrire du cours certifié <strong>{course}</strong><br><br>"
+
+msgid "In this case, click <strong>Unsubscribe</strong> and to request a refund please contact our support at the following address: <a href=mailto:{billing_email}>{billing_email}</a>"
+msgstr "Dans ce cas, cliquez sur <strong>Se désinscrire</strong>, puis pour toute demande de remboursement contactez notre support à lʼadresse <a href=mailto:{billing_email}>{billing_email}</a>"
+
+msgid "Once you have paid, you agree to pass a remote proctored exam according to procedures and rules defined for this course."
+msgstr "Attention: Une fois le paiement effectué vous vous engagez à passer un examen surveillé à distance selon les protocoles définis pour ce cours."
