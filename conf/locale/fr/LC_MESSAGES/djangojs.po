@@ -3898,7 +3898,7 @@ msgstr "Certificat vérifié"
 
 #: lms/static/js/verify_student/views/make_payment_step_view.js
 msgid "Checkout"
-msgstr ""
+msgstr "Payer"
 
 #: lms/static/js/verify_student/views/make_payment_step_view.js
 msgid "Checkout with PayPal"
@@ -3908,7 +3908,7 @@ msgstr ""
 #. vendor (example: "PayPal")
 #: lms/static/js/verify_student/views/make_payment_step_view.js
 msgid "Checkout with {processor}"
-msgstr ""
+msgstr "Payer"
 
 #: lms/static/js/verify_student/views/make_payment_step_view.js
 msgid "An error has occurred. Please try again."
@@ -6016,7 +6016,7 @@ msgstr "Vous vous inscrivez à : %(courseName)s"
 
 #: lms/templates/verify_student/make_payment_step.underscore
 msgid "You are upgrading your enrollment for: %(courseName)s"
-msgstr ""
+msgstr "Mise à jour de votre inscription à: %(courseName)s"
 
 #: lms/templates/verify_student/make_payment_step.underscore
 msgid ""
@@ -6030,7 +6030,7 @@ msgid ""
 "You can pay now even if you don't have the following items available, but "
 "you will need to have these by %(date)s to qualify to earn a Verified "
 "Certificate."
-msgstr ""
+msgstr "Vous pouvez payer même si vous ne disposez pas encore des éléments suivant, mais vous en aurez besoin le %(date) pour passer passer l'examem qui donne droit au certificat."
 
 #: lms/templates/verify_student/make_payment_step.underscore
 msgid ""
@@ -6040,7 +6040,7 @@ msgstr ""
 
 #: lms/templates/verify_student/make_payment_step.underscore
 msgid "Government-Issued Photo ID"
-msgstr ""
+msgstr "Pièce d'identité officielle"
 
 #: lms/templates/verify_student/make_payment_step.underscore
 msgid ""

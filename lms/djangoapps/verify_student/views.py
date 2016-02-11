@@ -344,7 +344,7 @@ class PayAndVerifyView(View):
 
         # Determine the photo verification status
         verification_good_until = self._verification_valid_until(request.user)
-
+        #import ipdb; ipdb.set_trace()
         # get available payment processors
         if unexpired_paid_course_mode.sku:
             # transaction will be conducted via ecommerce service
@@ -659,7 +659,6 @@ def checkout_with_shoppingcart(request, user, course_key, course_mode, amount):
     # This avoids a second AJAX call and some additional complication of the JavaScript.)
     # If a user later re-enters the verification / payment flow, she will create a new order.
     cart.start_purchase()
-
     callback_url = request.build_absolute_uri(
         reverse("shoppingcart.views.postpay_callback")
     )

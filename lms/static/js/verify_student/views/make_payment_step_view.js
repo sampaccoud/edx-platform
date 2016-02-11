@@ -170,14 +170,25 @@ var edx = edx || {};
             form.attr( 'action', paymentData.payment_page_url );
             form.attr( 'method', 'POST' );
 
-            _.each( paymentData.payment_form_data, function( value, key ) {
-                $('<input>').attr({
-                    type: 'hidden',
-                    name: key,
-                    value: value
-                }).appendTo(form);
-            });
+            var payment_form_data = [];
 
+            for(var key in paymentData.payment_form_data) {
+                payment_form_data.push([key, paymentData.payment_form_data[key]])
+            }
+            payment_form_data = payment_form_data.sort(function(a, b){
+                if (a[0] < b[0])
+                  return -1;
+                if (a[0] > b[0])
+                  return 1;
+                return 0;
+            });
+            _.each( payment_form_data, function( value ) {
+                    $('<input>').attr({
+                        type: 'hidden',
+                        name: value[0],
+                        value: value[1]
+                    }).appendTo(form);
+            });
             // Marketing needs a way to tell the difference between users
             // leaving for the payment processor and users dropping off on
             // this page. A virtual pageview can be used to do this.
