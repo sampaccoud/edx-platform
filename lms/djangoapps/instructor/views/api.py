@@ -1068,7 +1068,7 @@ def get_students_features(request, course_id, csv=False):  # pylint: disable=red
         query_features = [
             'id', 'username', 'name', 'email', 'language', 'location',
             'year_of_birth', 'gender', 'level_of_education', 'mailing_address',
-            'goals'
+            'city', 'country', 'goals'
         ]
 
     # Provide human-friendly and translatable names for these features. These names
@@ -1085,6 +1085,8 @@ def get_students_features(request, course_id, csv=False):  # pylint: disable=red
         'gender': _('Gender'),
         'level_of_education': _('Level of Education'),
         'mailing_address': _('Mailing Address'),
+        'city': _('City'),
+        'country': _('Country'),
         'goals': _('Goals'),
     }
 
