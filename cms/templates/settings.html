@@ -26,6 +26,43 @@
 window.CMS = window.CMS || {};
 CMS.URL = CMS.URL || {};
 CMS.URL.UPLOAD_ASSET = '${upload_asset_url}';
+
+require(["domReady!", "jquery", "js/models/settings/course_details", "js/views/settings/main"],
+  function(doc, $, CourseDetailsModel, MainView) {
+    CourseDetailsModel.prototype.videosourceSample = function() {
+        if (this.has('intro_video')){
+            //We teach videosourceSample how to handle properly DMCloud URLS and DM Classic ID that might be given
+            //as they are now stored in the db just like Youtube IDs
+            //but we also teach videosource Sample to handle DM Cloud ID's as they might also be an input,
+            //not from db as we explained, but directly from client that inputs DM Cloud ID and not DM Cloud URL
+            //(unless he computes md5sum in his head of course!).
+            var inputToProcess = this.get('intro_video');
+            var inputProcessed = inputToProcess;
+            //now if we have a DMCloud ID (we allow capital letters as user may not be "case sensitive")
+            //we can only give the DMCloud ID as it is not possible to compute here the signed URL
+            if(/^[a-fA-F0-9]{24}$/.test(inputToProcess)){
+                inputProcessed = inputToProcess;
+            }
+            //now if we have a DMCloud URL provided by server there is nothing to do
+            //we do nothing here (case is shown for clarity only)
+            else if(/^https:\/\/cdn\.dmcloud\.net\//.test(inputToProcess)){
+                inputProcessed = inputToProcess;
+            }
+            //if we have DM Classic ID (public or private)
+            else if((/^[a-zA-Z0-9]{6,10}$/.test(inputToProcess)) || (/^[a-zA-Z0-9]{19}$/.test(inputToProcess))){
+                inputProcessed = "//www.dailymotion.com/embed/video/" + inputToProcess;
+            }
+            //if we are in none of these cases then we do it as it was done before
+            //we keep the original solution used to handle youtube videos
+            else{
+                inputProcessed = "//www.youtube.com/embed/" + inputToProcess;
+            }
+            return inputProcessed;
+        } else {
+            return "";
+        }
+    }
+});
   </script>
 </%block>
 
@@ -344,8 +381,8 @@ CMS.URL.UPLOAD_ASSET = '${upload_asset_url}';
 
                   <div class="input">
                     ## Translators: This is the placeholder text for a field that requests a YouTube video ID for a course video
-                    <input type="text"  dir="ltr" class="long new-course-introduction-video add-video-data" id="course-introduction-video" value="" placeholder="${_("your YouTube video's ID")}" autocomplete="off" />
-                    <span class="tip tip-stacked">${_("Enter your YouTube video's ID (along with any restriction parameters)")}</span>
+                    <input type="text"  dir="ltr" class="long new-course-introduction-video add-video-data" id="course-introduction-video" value="" placeholder="${_('your video ID')}" autocomplete="off" />
+                    <span class="tip tip-stacked">${_("Enter your video ID (Note : DailyMotion Cloud, DailyMotion Classic and Youtube are supported. Still, the administrator may restrict the use to only one or two of these video web hosting services)")}</span>
                   </div>
                 </li>
                 % endif
