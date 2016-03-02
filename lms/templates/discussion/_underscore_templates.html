@@ -601,6 +601,12 @@ ${secondaryAction("delete", "remove", _("Delete"))}
         <span class="user-label-community-ta">${_("Community TA")}</span>
         ${"<% } else if (is_staff) { %>"}
         <span class="user-label-staff">${_("Staff")}</span>
+        ${"<% } else if (is_active) { %>"}
+        <span class="user-label-active">${_("Active")}</span>
+        ${"<% } else if (is_recommended) { %>"}
+        <span class="user-label-recommended">${_("Recommended")}</span>
+        ${"<% } else if (is_official) { %>"}
+        <span class="user-label-official">${_("Official")}</span>
         ${"<% } %>"}
     ${"<% } else { %>"}
     ${_('anonymous') | h}
