@@ -11427,6 +11427,34 @@ msgstr ""
 msgid "Grading Policy"
 msgstr ""
 
+#: lms/templates/instructor/instructor_dashboard_2/membership.html
+msgid "Active contributors"
+msgstr "Contributeurs actifs"
+
+#: lms/templates/instructor/instructor_dashboard_2/membership.html
+msgid "Add contributor"
+msgstr "Ajouter un contributeur"
+
+#: lms/templates/instructor/instructor_dashboard_2/membership.html
+msgid "Official contributors"
+msgstr "Contributeurs officiels"
+
+#: lms/templates/instructor/instructor_dashboard_2/membership.html
+msgid "Official forum contributors."
+msgstr "Contributeurs officiels du forum."
+
+#: lms/templates/instructor/instructor_dashboard_2/membership.html
+msgid "Recommended contributors"
+msgstr "Contributeurs recommandés"
+
+#: lms/templates/instructor/instructor_dashboard_2/membership.html
+msgid "These forum contributors are recommended by the instructor."
+msgstr "Ces contributeurs du forum sont recommandés par l'enseignant."
+
+#: lms/templates/instructor/instructor_dashboard_2/membership.html
+msgid "These forum contributors are very active."
+msgstr "Contributeurs du forum particulièrement actifs."
+
 #: lms/templates/ccx/enrollment.html
 #: lms/templates/instructor/instructor_dashboard_2/membership.html
 msgid "Batch Enrollment"
