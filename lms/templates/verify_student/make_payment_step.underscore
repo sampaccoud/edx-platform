@@ -87,13 +87,6 @@
     </div>
     <% } else if ( alreadyVerified && verificationGoodUntil ) { %>
     <div class="container register is-verified">
-      <h3 class="title"><%- gettext( "You have already verified your ID!" ) %></h3>
-      <p>
-        <%= _.sprintf(
-        gettext( "Your verification status is good until %(verificationGoodUntil)s." ),
-         { verificationGoodUntil: verificationGoodUntil }
-        ) %>
-      </p>
     </div>
     <% } %>
 

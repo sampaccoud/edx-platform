@@ -167,7 +167,9 @@ from django.core.urlresolvers import reverse
         </li>
         % endif
 
-        <%include file='dashboard/_dashboard_status_verification.html' />
+        %if not settings.FUN_ECOMMERCE_AUTOMATIC_VERIFICATION:
+          <%include file='dashboard/_dashboard_status_verification.html' />
+        %endif
 
       </ul>
     </section>

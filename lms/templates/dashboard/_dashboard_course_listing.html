@@ -277,7 +277,7 @@ from student.helpers import (
 
       % if credit_status is not None:
         <%include file="_dashboard_credit_info.html" args="credit_status=credit_status"/>
-      % endif 
+      % endif
 
         % if verification_status.get('status') in [VERIFY_STATUS_NEED_TO_VERIFY, VERIFY_STATUS_SUBMITTED, VERIFY_STATUS_APPROVED, VERIFY_STATUS_NEED_TO_REVERIFY] and not is_course_blocked:
         <div class="message message-status wrapper-message-primary is-shown">
@@ -302,10 +302,9 @@ from student.helpers import (
             <h4 class="message-title">${_('You have already verified your ID!')}</h4>
             <p class="message-copy">${_('Thanks for your patience as we process your request.')}</p>
           % elif verification_status['status'] == VERIFY_STATUS_APPROVED:
-            <h4 class="message-title">${_('You have already verified your ID!')}</h4>
-            % if verification_status.get('verification_good_until') is not None:
-              <p class="message-copy">${_('Your verification status is good until {date}.').format(date=verification_status['verification_good_until'])}
-            % endif
+
+            <h4 class="message-title">Vous avez souscrit à un examen payant pour ce cours</h4>
+
           % elif verification_status['status'] == VERIFY_STATUS_NEED_TO_REVERIFY:
             <h4 class="message-title">${_('Your verification will expire soon!')}</h4>
             ## Translators: start_link and end_link will be replaced with HTML tags;
