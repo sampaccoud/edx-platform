@@ -63,7 +63,7 @@ from django.core.urlresolvers import reverse
                 <article class="register-choose content-main">
                     <header class="page-header content-main">
                         <h3 class="title">
-                            ${_("Congratulations!  You are now enrolled in {course_name}").format(course_name=course_name)}
+                            ${course_name}
                         </h3>
                     </header>
 
@@ -102,22 +102,23 @@ from django.core.urlresolvers import reverse
                                     <h4 class="title">${_("Pursue a Verified Certificate")}</h4>
 
                                     <div class="copy">
-                                        <p>${_("Highlight your new knowledge and skills with a verified certificate. Use this valuable credential to improve your job prospects and advance your career, or highlight your certificate in school applications.")}</p>
+                                        <p>
+Valorisez vos nouvelles connaissances grâce à un certificat vérifié. Ce document vous permettra d’améliorer votre employabilité et de promouvoir votre carrière.
+                                        </p>
                                         <p>
                                             <div class="wrapper-copy-inline">
                                                 <div class="copy-inline">
-                                                    <h4>${_("Benefits of a Verified Certificate")}</h4>
+                                                    <h4>Les bénéfices d'un certificat vérifié :</h4>
                                                     <ul>
-                                                        <li>${_("{b_start}Official: {b_end}Receive an instructor-signed certificate with the institution's logo").format(b_start='<b>', b_end='</b>')}</li>
-                                                        <li>${_("{b_start}Easily shareable: {b_end}Add the certificate to your CV or resume, or post it directly on LinkedIn").format(b_start='<b>', b_end='</b>')}</li>
-                                                        <li>${_("{b_start}Motivating: {b_end}Give yourself an additional incentive to complete the course").format(b_start='<b>', b_end='</b>')}</li>
+<li>Recevez un certificat émit par l'établissement créateur du MOOC.</li>
+<li>Ajoutez ce certificat à votre CV, à votre lettre de motivation ou partagez-le directement sur les réseaux sociaux.</li>
                                                     </ul>
                                                 </div>
                                                 <div class="copy-inline list-actions">
                                                     <ul class="list-actions">
                                                         <li class="action action-select">
                                                             <input type="hidden" name="contribution" value="${min_price}" />
-                                                            <input type="submit" name="verified_mode" value="${_('Pursue a Verified Certificate')} ($${min_price})" />
+                                                            <input type="submit" name="verified_mode" value="${_('Pursue a Verified Certificate')} (€${min_price})" />
                                                         </li>
                                                     </ul>
                                                 </div>
