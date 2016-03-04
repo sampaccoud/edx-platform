@@ -94,7 +94,7 @@
   <div class="payment-buttons nav-wizard is-ready center">
     <input type="hidden" name="contribution" value="<%- minPrice %>" />
     <div class="purchase">
-      <p class="product-info"><span class="product-name"></span> <%- gettext( "price" ) %>: <span class="price">$<%- minPrice %></span></p>
+      <p class="product-info"><span class="product-name"></span> <%- gettext( "price" ) %>: <span class="price">€<%- minPrice %></span></p>
     </div>
     <div class="pay-options">
       <%

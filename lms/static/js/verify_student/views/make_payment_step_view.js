@@ -17,7 +17,7 @@ var edx = edx || {};
                 isActive: true,
                 suggestedPrices: [],
                 minPrice: 0,
-                currency: 'usd',
+                currency: 'eur',
                 upgrade: false,
                 verificationDeadline: '',
                 courseName: '',
@@ -53,7 +53,7 @@ var edx = edx || {};
             } else {
                 // This is mainly for testing as no other processors are supported right now.
                 // Translators: 'processor' is the name of a third-party payment processing vendor (example: "PayPal")
-                return interpolate_text(gettext('Checkout with {processor}'), {processor: processorName});
+                return 'Payer';
             }
         },
 
