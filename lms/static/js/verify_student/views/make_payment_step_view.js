@@ -90,13 +90,16 @@ var edx = edx || {};
                 $( '.wrapper-task' ).removeClass( 'hidden' ).removeAttr( 'aria-hidden' );
             }
 
+            // Verify user has understood the requirements
+            $( '.understand-requirement[type="checkbox"]' ).on('change', _.bind(this.checkPaymentEnabled, this));
+
             if ( templateContext.suggestedPrices.length > 0 ) {
                 // Enable the payment button once an amount is chosen
-                $( 'input[name="contribution"]' ).on( 'click', _.bind( this.setPaymentEnabled, this ) );
+                $( 'input[name="contribution"]' ).on( 'click', _.bind( this.checkPaymentEnabled, this ) );
             } else {
                 // If there is only one payment option, then the user isn't shown
                 // radio buttons, so we need to enable the radio button.
-                this.setPaymentEnabled( true );
+                this.checkPaymentEnabled();
             }
 
             // render the name of the product being paid for
@@ -111,6 +114,20 @@ var edx = edx || {};
 
             // Handle payment submission
             $( '.payment-button' ).on( 'click', _.bind( this.createOrder, this ) );
+
+            // The former call to checkPaymentEnabled does not disable the
+            // payment button because it hadn't been introduced in the DOM,
+            // yet. So we need to make another call after
+            // _getPaymentButtonHtml.
+            this.checkPaymentEnabled();
+        },
+
+        checkPaymentEnabled: function() {
+            if ($( '.understand-requirement[type="checkbox"]:not(:checked)' ).length === 0) {
+                this.setPaymentEnabled(true);
+            } else {
+                this.setPaymentEnabled(false);
+            }
         },
 
         setPaymentEnabled: function( isEnabled ) {
@@ -211,7 +228,7 @@ var edx = edx || {};
             });
 
             // Re-enable the button so the user can re-try
-            this.setPaymentEnabled( true );
+            this.checkPaymentEnabled();
 
             $( '.payment-button' ).toggleClass( 'is-selected', false );
         },
@@ -259,7 +276,7 @@ var edx = edx || {};
             }
 
             // In either case, enable the payment button
-            this.setPaymentEnabled();
+            this.checkPaymentEnabled();
 
             return amount;
         },
