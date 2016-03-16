@@ -53,7 +53,7 @@ var edx = edx || {};
             } else {
                 // This is mainly for testing as no other processors are supported right now.
                 // Translators: 'processor' is the name of a third-party payment processing vendor (example: "PayPal")
-                return 'Payer';
+                return gettext('Pay');
             }
         },
 

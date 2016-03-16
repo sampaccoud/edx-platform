@@ -344,7 +344,6 @@ class PayAndVerifyView(View):
 
         # Determine the photo verification status
         verification_good_until = self._verification_valid_until(request.user)
-        #import ipdb; ipdb.set_trace()
         # get available payment processors
         if unexpired_paid_course_mode.sku:
             # transaction will be conducted via ecommerce service
