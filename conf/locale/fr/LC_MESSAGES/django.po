@@ -19523,12 +19523,12 @@ msgstr "ID de votre vidéo"
 
 #: cms/templates/settings.html
 msgid ""
-"Enter your video ID (Note : DailyMotion Cloud, DailyMotion Classic and "
-"Youtube are supported. Still, the administrator may restrict the use to "
-"only one or two of these video web hosting services)"
+"Enter your video ID (Note : DailyMotion and Youtube are supported. Still, "
+"the administrator may restrict the use to only one or two of these video "
+"web hosting services)"
 msgstr ""
-"Saisissez l'ID de votre video de teaser. (Notez que DailyMotion Cloud, "
-"DailyMotion Classic et Youtube sont supportés. Cependant, l'administrateur "
+"Saisissez l'ID de votre video de teaser. (Notez que DailyMotion et "
+"Youtube sont supportés. Cependant, l'administrateur "
 "peut limiter l'usage d'un ou plusieurs de ces services d'hébergement de "
 "vidéos.)"
 
