@@ -304,28 +304,7 @@ def _cert_info(user, course, cert_status, course_mode):
 
     if status == 'ready':
         # showing the certificate web view button if certificate is ready state and feature flags are enabled.
-        if settings.FEATURES.get('CERTIFICATES_HTML_VIEW', False):
-            if get_active_web_certificate(course) is not None:
-                certificate_url = get_certificate_url(
-                    user_id=user.id,
-                    course_id=unicode(course.id),
-                    verify_uuid=None
-                )
-                status_dict.update({
-                    'show_cert_web_view': True,
-                    'cert_web_view_url': u'{url}'.format(url=certificate_url)
-                })
-            else:
-                # don't show download certificate button if we don't have an active certificate for course
-                status_dict['show_download_url'] = False
-        elif 'download_url' not in cert_status:
-            log.warning(
-                u"User %s has a downloadable cert for %s, but no download url",
-                user.username,
-                course.id
-            )
-            return default_info
-        else:
+        if cert_status.get('download_url'):
             status_dict['download_url'] = cert_status['download_url']
 
             # If enabled, show the LinkedIn "add to profile" button
@@ -339,6 +318,27 @@ def _cert_info(user, course, cert_status, course_mode):
                     cert_status.get('mode'),
                     cert_status['download_url']
                 )
+        elif settings.FEATURES.get('CERTIFICATES_HTML_VIEW', False):
+            if get_active_web_certificate(course) is not None:
+                certificate_url = get_certificate_url(
+                    user_id=user.id,
+                    course_id=unicode(course.id),
+                    verify_uuid=None
+                )
+                status_dict.update({
+                    'show_cert_web_view': True,
+                    'cert_web_view_url': u'{url}'.format(url=certificate_url)
+                })
+            else:
+                # don't show download certificate button if we don't have an active certificate for course
+                status_dict['show_download_url'] = False
+        else:
+            log.warning(
+                u"User %s has a downloadable cert for %s, but no download url",
+                user.username,
+                course.id
+            )
+            return default_info
 
     if status in ('generating', 'ready', 'notpassing', 'restricted'):
         if 'grade' not in cert_status:
