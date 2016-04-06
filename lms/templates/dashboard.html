@@ -9,6 +9,20 @@ from microsite_configuration import microsite
 from django.core.urlresolvers import reverse
 %>
 
+
+<% ## FUN
+import dateutil.parser
+
+from commerce import ecommerce_api_client
+from payment.utils import format_date_order
+api = ecommerce_api_client(user)
+
+FUN_order_history_list = []
+if verification_status_by_course: # empty if no verified courses
+    FUN_order_history_list = api.orders().get()
+## END FUN
+%>
+
 <%
   cert_name_short = settings.CERT_NAME_SHORT
   cert_name_long = settings.CERT_NAME_LONG
@@ -156,7 +170,6 @@ from django.core.urlresolvers import reverse
           <span class="title">${_("Want to change your account settings?")}</span>
           <span class="copy">${_("Click the arrow next to your username above.")}</span>
         </li>
-
         % if len(order_history_list):
         <li class="order-history">
           <span class="title">${_("Order History")}</span>
@@ -164,13 +177,26 @@ from django.core.urlresolvers import reverse
             <span><a href="${order_history_item['receipt_url']}" target="_blank" class="edit-name">${order_history_item['order_date']}</a></span>
           % endfor
         </li>
-        % endif
+## FUN
+         %elif FUN_order_history_list:
+         <li class="order-history">
+           <span class="title">${_("Order History")}</span>
+           % for order in FUN_order_history_list[u"results"]:
+             <%
+                 num_order = order["number"]
+                 reversed_url = reverse('payment:detail-receipt', kwargs={'order_id':num_order})
 
-## FUN : add links to receipt page
-      <span class="title">
-        <a href="${reverse('payment:list-receipts')}" class="edit-name">
-            ${_("Order History")}
-        </a>
+                 c = {"date": format_date_order(order, '%m/%d/%y'),
+                      "num": num_order,
+                      "price": order['total_excl_tax'],
+                      "cur": order[u"currency"]
+                     }
+                 mess = "{date} : {num} - {price} {cur}".format(**c)
+             %>
+             <span><a href="${reversed_url}" class="edit-name">${mess}</a></span>
+           % endfor
+         </li>
+         % endif
 ## END FUN
 
       </ul>
