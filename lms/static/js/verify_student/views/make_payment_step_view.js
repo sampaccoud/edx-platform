@@ -12,6 +12,8 @@ var edx = edx || {};
 
         templateName: "make_payment_step",
 
+        terms_and_conditions: null,
+
         defaultContext: function() {
             return {
                 isActive: true,
@@ -90,16 +92,13 @@ var edx = edx || {};
                 $( '.wrapper-task' ).removeClass( 'hidden' ).removeAttr( 'aria-hidden' );
             }
 
-            // Verify user has understood the requirements
-            $( '.understand-requirement[type="checkbox"]' ).on('change', _.bind(this.checkPaymentEnabled, this));
-
             if ( templateContext.suggestedPrices.length > 0 ) {
                 // Enable the payment button once an amount is chosen
-                $( 'input[name="contribution"]' ).on( 'click', _.bind( this.checkPaymentEnabled, this ) );
+                $( 'input[name="contribution"]' ).on( 'click', _.bind( this.setPaymentEnabled, this ) );
             } else {
                 // If there is only one payment option, then the user isn't shown
                 // radio buttons, so we need to enable the radio button.
-                this.checkPaymentEnabled();
+                this.setPaymentEnabled( true );
             }
 
             // render the name of the product being paid for
@@ -123,13 +122,36 @@ var edx = edx || {};
         },
 
         checkPaymentEnabled: function() {
-            if ($( '.understand-requirement[type="checkbox"]:not(:checked)' ).length === 0) {
-                this.setPaymentEnabled(true);
-            } else {
-                this.setPaymentEnabled(false);
+            var that = this;
+            var callback = function(data) {
+                if (data.version) {   // an empty json is returned if no terms to validate
+                    that.terms_and_conditions = data;
+                }
+                if (that.terms_and_conditions) {
+                    $('.display-fun-payment-terms-text').html(that.terms_and_conditions.text);
+                    that.setPaymentEnabled(false);
+                    $('#validate-terms').click(function(){
+                        $.post("/payment/terms/accept/",
+                            function(data) {
+                                $('.display-fun-payment-terms').fadeOut()
+                                that.setPaymentEnabled(true);
+                            }
+                        );
+                    });
+                } else {
+                    $('.display-fun-payment-terms').hide();
+                    that.setPaymentEnabled(true);
+                }
+            }
+            this.getTerms(callback);
+        },
+        getTerms: function(callback) {
+            if (!this.terms_and_conditions) {
+                $.get("/payment/terms/get/",
+                    callback
+                );
             }
         },
-
         setPaymentEnabled: function( isEnabled ) {
             if ( _.isUndefined( isEnabled ) ) {
                 isEnabled = true;
@@ -228,7 +250,7 @@ var edx = edx || {};
             });
 
             // Re-enable the button so the user can re-try
-            this.checkPaymentEnabled();
+            this.setPaymentEnabled();
 
             $( '.payment-button' ).toggleClass( 'is-selected', false );
         },
@@ -276,7 +298,7 @@ var edx = edx || {};
             }
 
             // In either case, enable the payment button
-            this.checkPaymentEnabled();
+            this.setPaymentEnabled();
 
             return amount;
         },
