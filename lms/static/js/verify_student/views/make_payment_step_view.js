@@ -148,6 +148,7 @@ var edx = edx || {};
         getTerms: function(callback) {
             if (!this.terms_and_conditions) {
                 $.get("/payment/terms/get/",
+                    {'always': true},  // show terms at each certified course enrollment, event if already accepted
                     callback
                 );
             }
