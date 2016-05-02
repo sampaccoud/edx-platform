@@ -7206,3 +7206,11 @@ msgstr ""
 #: cms/templates/js/video/transcripts/messages/transcripts-use-existing.underscore
 msgid "Use Current Transcript"
 msgstr "Utiliser la transcription courante"
+
+#: lms/templates/verify_student/make_payment_step.underscore:90
+msgid "Please read and accept terms and conditions"
+msgstr "Veuillez lire et accepter les conditions d'utilisation"
+
+#: lms/templates/verify_student/make_payment_step.underscore:98
+msgid "Accept"
+msgstr "J'accepte"
