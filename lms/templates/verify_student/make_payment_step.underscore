@@ -87,7 +87,7 @@
 
     <div class="display-fun-payment-terms">
       <div class="display-fun-payment-terms-header">
-        <%- gettext("Please read and accept terms and conditions") %>
+        Veuillez lire et accepter les conditions d'utilisation
       </div>
 
       <div class="display-fun-payment-terms-text">
@@ -95,7 +95,7 @@
 
       <div class="display-fun-payment-terms-footer">
         <span id="validate-terms" class="btn-terms">
-          <%- gettext("Accept") %>
+          J'accepte
         </span>
       </div>
 
