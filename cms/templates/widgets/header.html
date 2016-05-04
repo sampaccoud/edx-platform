@@ -104,10 +104,11 @@
                     <a href="${advanced_settings_url}">${_("Advanced Settings")}</a>
                   </li>
                   % if settings.FEATURES.get('CERTIFICATES_HTML_VIEW', False) and \
-                    (user.is_superuser or user.is_staff or \
-                    CourseCreatorRole(course_key).has_user(user) or \
-                    CourseInstructorRole(course_key).has_user(user) or \
-                    CourseStaffRole(course_key).has_user(user)):
+                    (user.is_superuser or user.is_staff):
+                    ## Restrict access to certificate admin to FUN staff users
+                    ##CourseCreatorRole(course_key).has_user(user) or \
+                    ##CourseInstructorRole(course_key).has_user(user) or \
+                    ##CourseStaffRole(course_key).has_user(user)):
                   <li class="nav-item nav-course-settings-certificates">
                     <a href="${certificates_url}">${_("Certificates")}</a>
                   </li>
