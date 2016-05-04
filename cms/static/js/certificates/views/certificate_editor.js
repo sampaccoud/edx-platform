@@ -14,7 +14,7 @@ define([ // jshint ignore:line
 function($, _, Backbone, gettext,
          ListItemEditorView, SignatoryModel, SignatoryEditorView, FileUploadModel, FileUploadDialog) {
     'use strict';
-    var MAX_SIGNATORIES_LIMIT = 4;
+    var MAX_SIGNATORIES_LIMIT = 8;
     var CertificateEditorView = ListItemEditorView.extend({
         tagName: 'div',
         events: {
