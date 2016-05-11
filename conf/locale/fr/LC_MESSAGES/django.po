@@ -20831,8 +20831,7 @@ msgstr "Dans ce cas, cliquez sur <strong>Se désinscrire</strong>, puis pour tou
 
 #: lms/templates/dashboard/_dashboard_course_listing.html
 msgid "Once you have paid, you agree to take a remote-proctored exam according to procedures and rules defined for this course."
-msgstr "Une fois le paiement effectué vous vous engagez à passer un examen surveillé à distance selon les protocoles définis pour ce
-cours."
+msgstr "Une fois le paiement effectué vous vous engagez à passer un examen surveillé à distance selon les protocoles définis pour ce cours."
 
 #: lms/templates/verify_student/make_payment_step.underscore:90
 msgid "Please read and accept terms and conditions"
@@ -20841,3 +20840,11 @@ msgstr "Veuillez lire et accepter les conditions d'utilisation"
 #: lms/templates/verify_student/make_payment_step.underscore:98
 msgid "Accept"
 msgstr "J'accepte"
+
+#: cms/templates/settings_graders.html
+msgid "Verified certificate minimum grade (leave empty if this course does not deliver a verified certificate):"
+msgstr "Note minimale pour les certificats vérifiés (laisser vide si ce cours ne fournit pas de certificat vérifié) :"
+
+#: cms/templates/settings_graders.html
+msgid "Minimum passing grade in percent"
+msgstr "Note minimale de passage en pourcentage"

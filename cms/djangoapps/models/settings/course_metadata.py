@@ -46,6 +46,7 @@ class CourseMetadata(object):
         'language',
         'certificates',
         'minimum_grade_credit',
+        'minimum_grade_verified_certificate',
     ]
 
     @classmethod
