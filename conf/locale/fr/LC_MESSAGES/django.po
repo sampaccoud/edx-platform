@@ -5089,7 +5089,7 @@ msgstr ""
 #. be ignored
 #: lms/djangoapps/certificates/views.py
 msgid "Terms of Service &amp; Honor Code"
-msgstr ""
+msgstr "Conditions générales d'utilisation"
 
 #. Translators: This line appears as a byline to a header image and describes
 #. the purpose of the page
