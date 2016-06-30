@@ -6032,7 +6032,7 @@ msgid ""
 "Certificate."
 msgstr ""
 "Vous pouvez payer même si vous ne disposez pas encore des éléments suivants, "
-"mais vous en aurez besoin avant le %(date) afin d'avoir le droit d'obtenir "
+"mais vous en aurez besoin avant le %(date)s afin d'avoir le droit d'obtenir "
 "un certificat vérifié."
 
 #: lms/templates/verify_student/make_payment_step.underscore
