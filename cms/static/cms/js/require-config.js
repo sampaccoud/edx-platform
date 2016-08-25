@@ -94,7 +94,7 @@ require.config({
             "js/src/youtube_fallback"
         ],
         // FUN-specific
-        'libcast': 'fun/js/libcast',
+        'videoplayer-fun': 'fun/js/videoplayer-fun',
         'videojs-fun': 'fun/js/vendor/videojs/video-fun',
     },
     shim: {

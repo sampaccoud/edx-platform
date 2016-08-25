@@ -75,8 +75,12 @@
             "catch": "js/vendor/ova/catch/js/catch",
             "handlebars": "js/vendor/ova/catch/js/handlebars-1.1.2",
             "tinymce": "js/vendor/tinymce/js/tinymce/tinymce.full.min",
-            "jquery.tinymce": "js/vendor/tinymce/js/tinymce/jquery.tinymce.min"
+            "jquery.tinymce": "js/vendor/tinymce/js/tinymce/jquery.tinymce.min",
             // end of files needed by OVA
+
+            // FUN-specific
+            'videoplayer-fun': 'fun/js/videoplayer-fun',
+            'videojs-fun': 'fun/js/vendor/videojs/video-fun',
         },
         shim: {
             "gettext": {
@@ -193,7 +197,11 @@
             },
             "moment-with-locales": {
                 exports: "moment"
-            }
+            },
+            // FUN-specific
+            'videojs-fun': {
+                exports: 'videojs_fun'
+            },
         }
     });
 }).call(this, require || RequireJS.require, define || RequireJS.define);
