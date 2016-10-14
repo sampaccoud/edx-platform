@@ -1007,6 +1007,8 @@ def change_enrollment(request, check_access=True):
         # Check that auto enrollment is allowed for this course
         # (= the course is NOT behind a paywall)
         if CourseMode.can_auto_enroll(course_id):
+            ### FUN: default enrollment mode to honor
+
             # Enroll the user using the default mode (audit)
             # We're assuming that users of the course enrollment table
             # will NOT try to look up the course enrollment model
