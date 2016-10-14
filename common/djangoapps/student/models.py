@@ -1221,6 +1221,7 @@ class CourseEnrollment(models.Model):
 
         `course_key` is our usual course_id string (e.g. "edX/Test101/2013_Fall)
 
+        ### FUN: default enrollment mode to honor
         `mode` is a string specifying what kind of enrollment this is. The
                default is the default course mode, 'audit'. Other options
                include 'professional', 'verified', 'honor',
@@ -1306,6 +1307,7 @@ class CourseEnrollment(models.Model):
 
         `course_id` is our usual course_id string (e.g. "edX/Test101/2013_Fall)
 
+        ### FUN: default enrollment mode to honor
         `mode` is a string specifying what kind of enrollment this is. The
                default is the default course mode, 'audit'. Other options
                include 'professional', 'verified', 'honor',
