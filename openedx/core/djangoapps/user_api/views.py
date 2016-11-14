@@ -490,7 +490,7 @@ class RegistrationView(APIView):
         """
         # Translators: This label appears above a dropdown menu on the registration
         # form used to select the user's highest completed level of education.
-        education_level_label = _(u"Highest level of education completed")
+        education_level_label = u"Votre situation professionelle"
 
         # The labels are marked for translation in UserProfile model definition.
         options = [(name, _(label)) for name, label in UserProfile.LEVEL_OF_EDUCATION_CHOICES]  # pylint: disable=translation-of-non-string
@@ -761,10 +761,10 @@ class RegistrationView(APIView):
         else:
             # Translators: This is a legal document users must agree to
             # in order to register a new account.
-            terms_text = _(u"Terms of Service and Honor Code")
+            terms_text = _(u"Terms of Service")
 
         terms_link = u"<a href=\"{url}\">{terms_text}</a>".format(
-            url=marketing_link("HONOR"),
+            url=marketing_link("LEGAL"),
             terms_text=terms_text
         )
 

@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 """
 Models for User Information (students, staff, etc)
 
@@ -281,6 +283,20 @@ class UserProfile(models.Model):
     # p_se and p_oth in the existing data in db.
     # ('p_se', 'Doctorate in science or engineering'),
     # ('p_oth', 'Doctorate in another field'),
+    #LEVEL_OF_EDUCATION_CHOICES = (
+    #    ('p', ugettext_noop('Doctorate')),
+    #    ('m', ugettext_noop("Master's or professional degree")),
+    #    ('b', ugettext_noop("Bachelor's degree")),
+    #    ('a', ugettext_noop("Associate degree")),
+    #    ('hs', ugettext_noop("Secondary/high school")),
+    #    ('jhs', ugettext_noop("Junior secondary/junior high/middle school")),
+    #    ('el', ugettext_noop("Elementary/primary school")),
+    #    # Translators: 'None' refers to the student's level of education
+    #    ('none', ugettext_noop("No Formal Education")),
+    #    # Translators: 'Other' refers to the student's level of education
+    #    ('other', ugettext_noop("Other Education"))
+    #)
+
     LEVEL_OF_EDUCATION_CHOICES = (
         ('p', ugettext_noop(u"Un particulier: En activité ou recherche d'emploi")),
         ('m', ugettext_noop(u"Un particulier: Etudiant")),
@@ -294,6 +310,7 @@ class UserProfile(models.Model):
         ('z1', ugettext_noop(u"Un professionnel du bâtiment: Economiste de la construction")),
         ('z2', ugettext_noop(u"Un professionnel du bâtiment: Enseignant ou formateur")),
     )
+
     level_of_education = models.CharField(
         blank=True, null=True, max_length=6, db_index=True,
         choices=LEVEL_OF_EDUCATION_CHOICES
