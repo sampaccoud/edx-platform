@@ -108,8 +108,12 @@
             'handlebars': 'js/vendor/ova/catch/js/handlebars-1.1.2',
             'tinymce': 'js/vendor/tinymce/js/tinymce/tinymce.full.min',
             'jquery.tinymce': 'js/vendor/tinymce/js/tinymce/jquery.tinymce.min',
-            'picturefill': 'common/js/vendor/picturefill'
+            'picturefill': 'common/js/vendor/picturefill',
             // end of files needed by OVA
+
+            // FUN-specific
+            'videoplayer-fun': 'fun/js/videoplayer-fun',
+            'videojs-fun': 'fun/js/vendor/videojs/video-fun'
         },
         shim: {
             'annotator_1.2.9': {
@@ -226,7 +230,12 @@
             // global namespace instead of being registered in require.
             'draggabilly': {
                 exports: 'Draggabilly'
+            },
+            // FUN-specific
+            'videojs-fun': {
+                exports: 'videojs_fun'
             }
+
         }
     });
 }).call(this, require || RequireJS.require, define || RequireJS.define);

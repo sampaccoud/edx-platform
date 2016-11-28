@@ -105,7 +105,10 @@
                 // if youtube fails to load, fallback on a local file
                 // so that require doesn't fall over
                 'js/src/youtube_fallback'
-            ]
+            ],
+            // FUN-specific
+            'videoplayer-fun': 'fun/js/videoplayer-fun',
+            'videojs-fun': 'fun/js/vendor/videojs/video-fun'
         },
         shim: {
             'gettext': {
@@ -311,8 +314,12 @@
                     'rangeslider', 'share-annotator', 'richText-annotator', 'reply-annotator',
                     'tags-annotator', 'flagging-annotator', 'grouping-annotator', 'diacritic-annotator',
                     'openseadragon', 'jquery-Watch', 'catch', 'handlebars', 'URI']
-            }
+            },
             // end of annotation tool files
+            // FUN-specific
+            'videojs-fun': {
+                exports: 'videojs_fun'
+            }
         }
     });
 }).call(this, require, define);
