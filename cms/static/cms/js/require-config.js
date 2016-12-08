@@ -96,6 +96,7 @@ require.config({
         // FUN-specific
         'videoplayer-fun': 'fun/js/videoplayer-fun',
         'videojs-fun': 'fun/js/vendor/videojs/video-fun',
+        'adways-player': '//dj5ag5n6bpdxo.cloudfront.net/libs/interactive/loader'
     },
     shim: {
         "gettext": {
@@ -292,5 +293,8 @@ require.config({
         'videojs-fun': {
             exports: 'videojs_fun'
         },
+        'adways-player': {
+            exports: 'adways'
+        }
     }
 });
