@@ -387,6 +387,7 @@ class LibraryContentDescriptor(LibraryContentFields, MakoModuleDescriptor, XmlDe
     Descriptor class for LibraryContentModule XBlock.
     """
     module_class = LibraryContentModule
+    category = 'library_content'
     mako_template = 'widgets/metadata-edit.html'
     js = {'coffee': [resource_string(__name__, 'js/src/vertical/edit.coffee')]}
     js_module_name = "VerticalDescriptor"
@@ -651,7 +652,7 @@ class LibraryContentDescriptor(LibraryContentFields, MakoModuleDescriptor, XmlDe
 
     def definition_to_xml(self, resource_fs):
         """ Exports Library Content Module to XML """
-        xml_object = etree.Element('library_content')
+        xml_object = etree.Element(self.category)
         for child in self.get_children():
             self.runtime.add_block_as_child_node(child, xml_object)
         # Set node attributes based on our fields.
@@ -671,3 +672,4 @@ class AdaptiveLibraryContentDescriptor(AdaptiveLibraryContentFields, LibraryCont
     Descriptor class for LibraryContentModule XBlock.
     """
     module_class = AdaptiveLibraryContentModule
+    category = 'adaptive_library_content'
