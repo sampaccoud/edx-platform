@@ -1070,6 +1070,81 @@ ENTRANCE_EXAM_MIN_SCORE_PCT = 50
 ### Default language for a new course
 DEFAULT_COURSE_LANGUAGE = "en"
 
+################ ADVANCED_COMPONENT_TYPES ###############
+
+# These strings are entry-point names from the setup.py of the XBlock.
+# For example:
+#
+#   setup(
+#       name='xblock-foobar',
+#       version='0.1',
+#       packages=[
+#           'foobar_xblock',
+#       ],
+#       entry_points={
+#           'xblock.v1': [
+#               'foobar-block = foobar_xblock:FoobarBlock',
+#           #    ^^^^^^^^^^^^ This is the one you want.
+#           ]
+#       },
+#   )
+#
+# To use this block, add 'foobar-block' to the ADVANCED_COMPONENT_TYPES list.
+
+ADVANCED_COMPONENT_TYPES = [
+    'annotatable',
+    'textannotation',  # module for annotating text (with annotation table)
+    'videoannotation',  # module for annotating video (with annotation table)
+    'imageannotation',  # module for annotating image (with annotation table)
+    'word_cloud',
+    'graphical_slider_tool',
+    'lti',
+    'lti_consumer',
+    'library_content',
+    'adaptive_library_content',
+    'edx_sga',
+    'problem-builder',
+    'pb-dashboard',
+    'poll',
+    'survey',
+    'activetable',
+    'vectordraw',
+    # Some of the XBlocks from pmitros repos are sometimes prototypes.
+    # Use with caution.
+    'concept',  # Concept mapper. See https://github.com/pmitros/ConceptXBlock
+    'done',  # Lets students mark things as done. See https://github.com/pmitros/DoneXBlock
+    'audio',  # Embed an audio file. See https://github.com/pmitros/AudioXBlock
+    'recommender',  # Crowdsourced recommender. Prototype by dli&pmitros. Intended for roll-out in one place in one course.
+    'profile',  # Prototype user profile XBlock. Used to test XBlock parameter passing. See https://github.com/pmitros/ProfileXBlock
+    'rate',  # Allows up-down voting of course content. See https://github.com/pmitros/RateXBlock
+
+    'split_test',
+    'notes',
+    'schoolyourself_review',
+    'schoolyourself_lesson',
+    # Office Mix
+    'officemix',
+
+    # Google Drive embedded components. These XBlocks allow one to
+    # embed public google drive documents and calendars within edX units
+    'google-document',
+    'google-calendar',
+
+    # Oppia block
+    'oppia',
+
+    # In-course reverification checkpoint
+    'edx-reverification-block',
+
+    # Peer instruction tool
+    'ubcpi',
+]
+
+# Adding components in this list will disable the creation of new problem for
+# those components in Studio. Existing problems will work fine and one can edit
+# them in Studio.
+DEPRECATED_ADVANCED_COMPONENT_TYPES = []
+
 # Specify XBlocks that should be treated as advanced problems. Each entry is a
 # dict:
 #       'component': the entry-point name of the XBlock.
