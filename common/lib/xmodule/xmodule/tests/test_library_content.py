@@ -10,7 +10,9 @@ from mock import Mock, patch
 from xblock.fragment import Fragment
 from xblock.runtime import Runtime as VanillaRuntime
 
-from xmodule.library_content_module import ANY_CAPA_TYPE_VALUE, LibraryContentDescriptor
+from xmodule.library_content_module import (
+    ANY_CAPA_TYPE_VALUE, AdaptiveLibraryContentModule, LibraryContentDescriptor, LibraryContentModule,
+)
 from xmodule.library_tools import LibraryToolsService
 from xmodule.modulestore import ModuleStoreEnum
 from xmodule.modulestore.tests.factories import LibraryFactory, CourseFactory
@@ -27,7 +29,13 @@ class LibraryContentTest(MixedSplitTestCase):
     """
     Base class for tests of LibraryContentModule (library_content_module.py)
     """
-    CATEGORY = "library_content"
+    DEFAULTS = {
+        "category": "library_content",
+        "module_class": LibraryContentModule,
+        "fields": {
+            "display_name": "Randomized Content Block",
+        },
+    }
 
     def setUp(self):
         super(LibraryContentTest, self).setUp()
@@ -43,7 +51,7 @@ class LibraryContentTest(MixedSplitTestCase):
         self.sequential = self.make_block("sequential", self.chapter)
         self.vertical = self.make_block("vertical", self.sequential)
         self.lc_block = self.make_block(
-            self.CATEGORY,
+            self.DEFAULTS["category"],
             self.vertical,
             max_count=1,
             source_library_id=unicode(self.library.location.library_key)
@@ -73,7 +81,13 @@ class AdaptiveLibraryContentTest(LibraryContentTest):
     """
     Base class for tests of AdaptiveLibraryContentModule (library_content_module.py)
     """
-    CATEGORY = "adaptive_library_content"
+    DEFAULTS = {
+        "category": "adaptive_library_content",
+        "module_class": AdaptiveLibraryContentModule,
+        "fields": {
+            "display_name": "Adaptive Content Block",
+        },
+    }
 
 
 class LibraryContentModuleTestMixin(object):
@@ -105,6 +119,19 @@ class LibraryContentModuleTestMixin(object):
         for problem_type in self.problem_types:
             block = self.make_block("problem", self.library, data=self._get_capa_problem_type_xml(*problem_type))
             self.problem_type_lookup[block.location] = problem_type
+
+    def test_defaults(self):
+        """
+        Test that block defaults match expected values.
+        """
+        category = self.lc_block.category
+        self.assertEqual(category, self.DEFAULTS["category"])
+
+        module_class = self.lc_block.module_class
+        self.assertEqual(module_class, self.DEFAULTS["module_class"])
+
+        display_name = self.lc_block.fields["display_name"]
+        self.assertEqual(display_name.default, self.DEFAULTS["fields"]["display_name"])
 
     def test_lib_content_block(self):
         """
