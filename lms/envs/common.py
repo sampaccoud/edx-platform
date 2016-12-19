@@ -2088,6 +2088,8 @@ INSTALLED_APPS = (
 
     # Email marketing integration
     'email_marketing',
+
+    'adaptive_domoscio',
 )
 
 # Migrations which are not in the standard module "migrations"
