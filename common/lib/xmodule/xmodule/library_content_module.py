@@ -2,7 +2,8 @@
 """
 LibraryContent: The XBlock used to include blocks from a library in a course.
 """
-import json
+import json, logging
+import requests
 from lxml import etree
 from copy import copy
 from capa.responsetypes import registry
@@ -27,6 +28,9 @@ from pkg_resources import resource_string
 _ = lambda text: text
 
 ANY_CAPA_TYPE_VALUE = 'any'
+
+
+log = logging.getLogger(__name__)
 
 
 def _get_human_name(problem_class):
@@ -371,12 +375,236 @@ class LibraryContentModule(LibraryContentFields, XModule, StudioEditableModule):
         return list(self._get_selected_child_blocks())
 
 
+@XBlock.wants('user')
 @XBlock.wants('library_tools')  # Only needed in studio
 class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentModule):
     """
     A specialized version of Randomized Content Block that communicates
     with an external service to determine when to show its children, and which ones.
     """
+
+    def __init__(self, descriptor, *args, **kwargs):
+        """
+        Cache relevant data.
+        """
+        self._adaptive_learning_configuration = None
+
+        super(AdaptiveLibraryContentModule, self).__init__(descriptor, *args, **kwargs)
+
+    @property
+    def adaptive_learning_configuration(self):
+        """
+        Return configuration for accessing external service that provides adaptive learning features.
+
+        This configuration is a course-wide setting, so in order to access it,
+        we need to load the parent course from the DB.
+
+        We only do this once, on the first call.
+        On subsequent calls we return a cached value.
+        """
+        if self._adaptive_learning_configuration is None:
+            from courseware.courses import get_course_by_id
+            course = get_course_by_id(self.course_id, depth=1)
+            self._adaptive_learning_configuration = course.adaptive_learning_configuration
+        return self._adaptive_learning_configuration
+
+    @property
+    def adaptive_learning_url(self):
+        """
+        Return base URL for external service that provides adaptive learning features.
+
+        The base URL is a combination of the URL (url) and API version (api_version)
+        specified in the adaptive learning configuration for the parent course.
+        """
+        url = self.adaptive_learning_configuration.get('url')
+        api_version = self.adaptive_learning_configuration.get('api_version')
+        return '{url}/{api_version}'.format(url=url, api_version=api_version)
+
+    @property
+    def instance_url(self):
+        """
+        Return URL for requesting instance-specific data from external service
+        that provides adaptive learning features.
+        """
+        instance_id = self.adaptive_learning_configuration.get('instance_id')
+        return '{base_url}/instances/{instance_id}'.format(
+            base_url=self.adaptive_learning_url, instance_id=instance_id
+        )
+
+    @property
+    def students_url(self):
+        """
+        Return URL for requests dealing with students.
+        """
+        return '{base_url}/students'.format(base_url=self.instance_url)
+
+    @property
+    def event_url(self):
+        """
+        Return URL for requests dealing with events.
+        """
+        return '{base_url}/events'.format(base_url=self.instance_url)
+
+    @property
+    def knowledge_node_students_url(self):
+        """
+        Return URL for accessing 'knowledge node student' objects.
+        """
+        return '{base_url}/knowledge_node_students'.format(base_url=self.instance_url)
+
+    @property
+    def request_headers(self):
+        """
+        Return custom headers for requests to external service that provides adaptive learning features.
+        """
+        access_token = self.adaptive_learning_configuration.get('access_token')
+        return {
+            'Authorization': 'Token token={access_token}'.format(access_token=access_token)
+        }
+
+    def student_view(self, context):
+        """
+        Render selected child blocks.
+        """
+        # Notify external service that parent unit has been viewed by learner
+        self.send_unit_viewed_event()
+
+        return super(AdaptiveLibraryContentModule, self).student_view(context)
+
+    def send_unit_viewed_event(self):
+        """
+        Notify external service that parent unit has been viewed by learner.
+        """
+        # Construct URL
+        url = self.event_url
+        # Construct event data
+        payload = {
+            'knowledge_node_student_id': self.get_knowledge_node_student_id(),
+            'event_type': 'EventRead',
+        }
+        # Send request
+        requests.post(url, headers=self.request_headers, data=payload)
+
+    def get_knowledge_node_student_id(self):
+        """
+        Return ID of 'knowledge node student' object linking current user and unit.
+        """
+        # Get student ID for current user
+        user_id = self.get_current_user_id()
+        # Get block ID of parent unit
+        block_id = self.get_parent_unit_id()
+        # Get 'knowledge node student' object linking current user and parent unit
+        knowledge_node_student = self.get_or_create_knowledge_node_student(block_id, user_id)
+        return knowledge_node_student.get('id')
+
+    def get_current_user_id(self):
+        """
+        Return anonymous ID of current user.
+        """
+        user_service = self.runtime.service(self, 'user')
+        current_user = user_service.get_current_user()
+        username = current_user.opt_attrs.get('edx-platform.username')
+        user_id = user_service.get_anonymous_user_id(username, unicode(self.course_id))
+        return user_id
+
+    def get_parent_unit_id(self):
+        """
+        Return block ID of parent unit.
+        """
+        parent_unit = self.get_parent()
+        return parent_unit.scope_ids.usage_id.block_id
+
+    def get_or_create_knowledge_node_student(self, block_id, user_id):
+        """
+        Return 'knowledge node student' object for user identified by `user_id`
+        and unit identified by `block_id`.
+        """
+        # Create student
+        self.get_or_create_student(user_id)
+        # Link student to unit
+        knowledge_node_student = self.get_knowledge_node_student(block_id, user_id)
+        if knowledge_node_student is None:
+            knowledge_node_student = self.create_knowledge_node_student(block_id, user_id)
+        return knowledge_node_student
+
+    def get_knowledge_node_student(self, block_id, user_id):
+        """
+        Return 'knowledge node student' object for user identified by `user_id`
+        and unit identified by `block_id`, or None if it does not exist.
+        """
+        # Get 'knowledge node student' objects
+        links = self.get_knowledge_node_students()
+        # Filter them by `block_id` and `user_id`
+        try:
+            link = next(
+                l for l in links if l.get('knowledge_node_uid') == block_id and l.get('student_uid') == user_id
+            )
+        except StopIteration:
+            link = None
+        return link
+
+    def create_knowledge_node_student(self, block_id, user_id):
+        """
+        Create 'knowledge node student' object that links student identified by `user_id`
+        to unit identified by `block_id`, and return it.
+        """
+        url = self.knowledge_node_students_url
+        payload = {'knowledge_node_uid': block_id, 'student_uid': user_id}
+        response = requests.post(url, headers=self.request_headers, data=payload)
+        knowledge_node_student = json.loads(response.content)
+        return knowledge_node_student
+
+    def get_or_create_student(self, user_id):
+        """
+        Create a new student on external service if it doesn't exist,
+        and return it.
+        """
+        student = self.get_student(user_id)
+        if student is None:
+            student = self.create_student(user_id)
+        return student
+
+    def get_student(self, user_id):
+        """
+        Return external information about student identified by `user_id`,
+        or None if external service does not know about student.
+        """
+        students = self.get_students()
+        try:
+            student = next(s for s in students if s.get('uid') == user_id)
+        except StopIteration:
+            student = None
+        return student
+
+    def get_students(self):
+        """
+        Return list of all students that external service knows about.
+        """
+        url = self.students_url
+        response = requests.get(url, headers=self.request_headers)
+        students = json.loads(response.content)
+        return students
+
+    def create_student(self, user_id):
+        """
+        Create student identified by `user_id` on external service,
+        and return it.
+        """
+        url = self.students_url
+        payload = {'uid': user_id}
+        response = requests.post(url, headers=self.request_headers, data=payload)
+        student = json.loads(response.content)
+        return student
+
+    def get_knowledge_node_students(self):
+        """
+        Return 'knowledge node student' objects linking student identified by `user_id`
+        to unit identfied by `block_id`.
+        """
+        url = self.knowledge_node_students_url
+        response = requests.get(url, headers=self.request_headers)
+        links = json.loads(response.content)
+        return links
 
 
 @XBlock.wants('user')
