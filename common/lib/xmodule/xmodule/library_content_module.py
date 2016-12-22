@@ -459,18 +459,18 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         return '{base_url}/events'.format(base_url=self.instance_url)
 
     @property
-    def pending_reviews_url(self):
-        """
-        Return URL for accessing pending reviews.
-        """
-        return '{base_url}/review_utils/fetch_reviews'.format(base_url=self.instance_url)
-
-    @property
     def knowledge_node_students_url(self):
         """
         Return URL for accessing 'knowledge node student' objects.
         """
         return '{base_url}/knowledge_node_students'.format(base_url=self.instance_url)
+
+    @property
+    def pending_reviews_url(self):
+        """
+        Return URL for accessing pending reviews.
+        """
+        return '{base_url}/review_utils/fetch_reviews'.format(base_url=self.instance_url)
 
     @property
     def request_headers(self):
@@ -483,14 +483,28 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         }
 
     @classmethod
-    def make_selection(cls, selected, children, max_count, mode, user_id=None):
+    def make_selection(cls, selected, children, max_count, mode):
         """
         Dynamically selects block_ids indicating which of the possible children are displayed to the current user.
 
-        Uses external service to determine the set of children to show to the current user
-        at this point in time.
+        Arguments:
+            selected - list of (block_type, block_id) tuples assigned to this student
+            children - children of this block
+            max_count - number of components to display to each student
+            mode - how content is drawn from the library
 
-        Ignores `max_count` argument.
+        Returns:
+            A dict containing the following keys:
+
+            'selected' (set) of (block_type, block_id) tuples assigned to this student
+            'invalid' (set) of dropped (block_type, block_id) tuples that are no longer valid
+            'overlimit' (set) of dropped (block_type, block_id) tuples that were previously selected
+            'added' (set) of newly added (block_type, block_id) tuples
+
+        Note that this implementation ignores the `max_count` argument:
+        The list of `selected` (block_type, block_id) tuples assigned to this student
+        has been determined based on information from external service providing adaptive learning features,
+        so we only remove blocks that are no longer valid here.
         """
         selected = set(tuple(k) for k in selected)  # set of (block_type, block_id) tuples assigned to this student
 
@@ -640,33 +654,6 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
             knowledge_node_student = self.create_knowledge_node_student(block_id, user_id)
         return knowledge_node_student
 
-    def get_knowledge_node_student(self, block_id, user_id):
-        """
-        Return 'knowledge node student' object for user identified by `user_id`
-        and unit identified by `block_id`, or None if it does not exist.
-        """
-        # Get 'knowledge node student' objects
-        links = self.get_knowledge_node_students()
-        # Filter them by `block_id` and `user_id`
-        try:
-            link = next(
-                l for l in links if l.get('knowledge_node_uid') == block_id and l.get('student_uid') == user_id
-            )
-        except StopIteration:
-            link = None
-        return link
-
-    def create_knowledge_node_student(self, block_id, user_id):
-        """
-        Create 'knowledge node student' object that links student identified by `user_id`
-        to unit identified by `block_id`, and return it.
-        """
-        url = self.knowledge_node_students_url
-        payload = {'knowledge_node_uid': block_id, 'student_uid': user_id}
-        response = requests.post(url, headers=self.request_headers, data=payload)
-        knowledge_node_student = json.loads(response.content)
-        return knowledge_node_student
-
     def get_or_create_student(self, user_id):
         """
         Create a new student on external service if it doesn't exist,
@@ -709,15 +696,41 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         student = json.loads(response.content)
         return student
 
+    def get_knowledge_node_student(self, block_id, user_id):
+        """
+        Return 'knowledge node student' object for user identified by `user_id`
+        and unit identified by `block_id`, or None if it does not exist.
+        """
+        # Get 'knowledge node student' objects
+        links = self.get_knowledge_node_students()
+        # Filter them by `block_id` and `user_id`
+        try:
+            link = next(
+                l for l in links if l.get('knowledge_node_uid') == block_id and l.get('student_uid') == user_id
+            )
+        except StopIteration:
+            link = None
+        return link
+
     def get_knowledge_node_students(self):
         """
-        Return 'knowledge node student' objects linking student identified by `user_id`
-        to unit identfied by `block_id`.
+        Return list of all 'knowledge node student' objects for this course.
         """
         url = self.knowledge_node_students_url
         response = requests.get(url, headers=self.request_headers)
         links = json.loads(response.content)
         return links
+
+    def create_knowledge_node_student(self, block_id, user_id):
+        """
+        Create 'knowledge node student' object that links student identified by `user_id`
+        to unit identified by `block_id`, and return it.
+        """
+        url = self.knowledge_node_students_url
+        payload = {'knowledge_node_uid': block_id, 'student_uid': user_id}
+        response = requests.post(url, headers=self.request_headers, data=payload)
+        knowledge_node_student = json.loads(response.content)
+        return knowledge_node_student
 
 
 @XBlock.wants('user')
