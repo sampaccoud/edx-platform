@@ -446,6 +446,13 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         return '{base_url}/events'.format(base_url=self.instance_url)
 
     @property
+    def pending_reviews_url(self):
+        """
+        Return URL for accessing pending reviews.
+        """
+        return '{base_url}/review_utils/fetch_reviews'.format(base_url=self.instance_url)
+
+    @property
     def knowledge_node_students_url(self):
         """
         Return URL for accessing 'knowledge node student' objects.
@@ -461,6 +468,113 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         return {
             'Authorization': 'Token token={access_token}'.format(access_token=access_token)
         }
+
+    @classmethod
+    def make_selection(cls, selected, children, max_count, mode, user_id=None):
+        """
+        Dynamically selects block_ids indicating which of the possible children are displayed to the current user.
+
+        Uses external service to determine the set of children to show to the current user
+        at this point in time.
+
+        Ignores `max_count` argument.
+        """
+        selected = set(tuple(k) for k in selected)  # set of (block_type, block_id) tuples assigned to this student
+
+        # Determine which of our children we will show:
+        valid_block_keys = set([(c.block_type, c.block_id) for c in children])
+        # Remove any selected blocks that are no longer valid:
+        invalid_block_keys = (selected - valid_block_keys)
+        if invalid_block_keys:
+            selected -= invalid_block_keys
+
+        # `overlimit_block_keys`:
+        # External service determines number of children to show,
+        # so no need to *drop* any blocks based on value of `max_count` argument.
+
+        # `added_block_keys`:
+        # External service determines number of children to show,
+        # so no need to *add* any blocks based on value of `max_count` argument.
+
+        return {
+            'selected': selected,
+            'invalid': invalid_block_keys,
+            # External service determines number of children to show,
+            # so `max_count` setting has no effect:
+            # We never *drop* previously selected children because of it,
+            # so the set of dropped children is empty by definition:
+            'overlimit': set(),
+            # External service determines number of children to show,
+            # so `max_count` setting has no effect:
+            # We never *add* any children because of it,
+            # so the set of added children is empty by definition:
+            'added': set(),
+        }
+
+    def get_selections_current_user(self, children):
+        """
+        Check with external service whether any children of this block
+        are scheduled for review by the current user, and return them.
+        """
+        pending_reviews = self.get_pending_reviews_current_user()
+        valid_block_keys = {
+            c.block_id: (c.block_type, c.block_id) for c in children
+        }
+        selections = []
+        for pending_review in pending_reviews:
+            block_id = pending_review.get('knowledge_node_uid')
+            if block_id in valid_block_keys:
+                selections.append(valid_block_keys['block_id'])
+        return selections
+
+    def get_pending_reviews_current_user(self):
+        """
+        Return pending reviews for current user.
+        """
+        user_id = self.get_current_user_id()
+        url = self.pending_reviews_url
+        payload = {'student_uid': user_id}
+        response = requests.get(url, headers=self.request_headers, data=payload)
+        pending_reviews_user = json.loads(response.content)
+        return pending_reviews_user
+
+    def selected_children(self):
+        """
+        Returns a set() of block_ids indicating which of the possible children
+        have been selected to display to the current user.
+
+        This reads and updates the "selected" field, which has user_state scope.
+
+        Note: self.selected and the return value contain block_ids. To get
+        actual BlockUsageLocators, it is necessary to use self.children,
+        because the block_ids alone do not specify the block type.
+        """
+        if hasattr(self, "_selected_set"):
+            # Already done:
+            return self._selected_set  # pylint: disable=access-member-before-definition
+
+        # Determine children to display based on information about pending reviews from external service.
+        # This needs to happen here (at instance level) because we need access to course and block-specific data,
+        # which is not available at the class level.
+        selected = self.get_selections_current_user(self.children)
+        block_keys = self.make_selection(selected, self.children, self.max_count, "adaptive")  # pylint: disable=no-member
+
+        # Publish events for analytics purposes:
+        lib_tools = self.runtime.service(self, 'library_tools')
+        format_block_keys = lambda keys: lib_tools.create_block_analytics_summary(self.location.course_key, keys)
+        self.publish_selected_children_events(
+            block_keys,
+            format_block_keys,
+            self._publish_event,
+        )
+
+        # Save our selections to the user state, to ensure consistency:
+        selected = block_keys['selected']
+        self.selected = list(selected)  # TODO: this doesn't save from the LMS "Progress" page.
+        # Cache the results
+        self._selected_set = selected  # pylint: disable=attribute-defined-outside-init
+
+        return selected
 
     def student_view(self, context):
         """
