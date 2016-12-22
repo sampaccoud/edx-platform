@@ -398,9 +398,11 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
 
     def __init__(self, descriptor, *args, **kwargs):
         """
-        Cache relevant data.
+        Initialize cache for relevant data.
         """
         self._adaptive_learning_configuration = None
+        self._current_user_id = None
+        self._parent_unit_id = None
 
         super(AdaptiveLibraryContentModule, self).__init__(descriptor, *args, **kwargs)
 
@@ -628,18 +630,21 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         """
         Return anonymous ID of current user.
         """
-        user_service = self.runtime.service(self, 'user')
-        current_user = user_service.get_current_user()
-        username = current_user.opt_attrs.get('edx-platform.username')
-        user_id = user_service.get_anonymous_user_id(username, unicode(self.course_id))
-        return user_id
+        if self._current_user_id is None:
+            user_service = self.runtime.service(self, 'user')
+            current_user = user_service.get_current_user()
+            username = current_user.opt_attrs.get('edx-platform.username')
+            self._current_user_id = user_service.get_anonymous_user_id(username, unicode(self.course_id))
+        return self._current_user_id
 
     def get_parent_unit_id(self):
         """
         Return block ID of parent unit.
         """
-        parent_unit = self.get_parent()
-        return parent_unit.scope_ids.usage_id.block_id
+        if self._parent_unit_id is None:
+            parent_unit = self.get_parent()
+            self._parent_unit_id = parent_unit.scope_ids.usage_id.block_id
+        return self._parent_unit_id
 
     def get_or_create_knowledge_node_student(self, block_id, user_id):
         """
