@@ -273,24 +273,12 @@ class LibraryContentModule(LibraryContentFields, XModule, StudioEditableModule):
                 added=format_block_keys(block_keys['added'])
             )
 
-    def selected_children(self):
+    def publish_events(self, block_keys):
         """
-        Returns a set() of block_ids indicating which of the possible children
-        have been selected to display to the current user.
+        Publish events containing information about child block selection.
 
-        This reads and updates the "selected" field, which has user_state scope.
-
-        Note: self.selected and the return value contain block_ids. To get
-        actual BlockUsageLocators, it is necessary to use self.children,
-        because the block_ids alone do not specify the block type.
+        Thin wrapper around `publish_selected_children_events`.
         """
-        if hasattr(self, "_selected_set"):
-            # Already done:
-            return self._selected_set  # pylint: disable=access-member-before-definition
-
-        block_keys = self.make_selection(self.selected, self.children, self.max_count, "random")  # pylint: disable=no-member
-
-        # Publish events for analytics purposes:
         lib_tools = self.runtime.service(self, 'library_tools')
         format_block_keys = lambda keys: lib_tools.create_block_analytics_summary(self.location.course_key, keys)
         self.publish_selected_children_events(
@@ -299,11 +287,36 @@ class LibraryContentModule(LibraryContentFields, XModule, StudioEditableModule):
             self._publish_event,
         )
 
-        # Save our selections to the user state, to ensure consistency:
-        selected = block_keys['selected']
+    def store_selected(self, selected):
+        """
+        Save `selected` children to user state to ensure consistency, and cache them for further use.
+
+        This reads and updates the "selected" field, which has user_state scope.
+
+        Note: self.selected and the return value contain block_ids. To get
+        actual BlockUsageLocators, it is necessary to use self.children,
+        because the block_ids alone do not specify the block type.
+        """
         self.selected = list(selected)  # TODO: this doesn't save from the LMS "Progress" page.
-        # Cache the results
         self._selected_set = selected  # pylint: disable=attribute-defined-outside-init
+
+    def selected_children(self):
+        """
+        Returns a set() of block_ids indicating which of the possible children
+        have been selected to display to the current user.
+        """
+        if hasattr(self, "_selected_set"):
+            # Already done:
+            return self._selected_set  # pylint: disable=access-member-before-definition
+
+        block_keys = self.make_selection(self.selected, self.children, self.max_count, "random")  # pylint: disable=no-member
+
+        # Publish events for analytics purposes:
+        self.publish_events(block_keys)
+
+        # Store selected children
+        selected = block_keys['selected']
+        self.store_selected(selected)
 
         return selected
 
@@ -542,12 +555,6 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         """
         Returns a set() of block_ids indicating which of the possible children
         have been selected to display to the current user.
-
-        This reads and updates the "selected" field, which has user_state scope.
-
-        Note: self.selected and the return value contain block_ids. To get
-        actual BlockUsageLocators, it is necessary to use self.children,
-        because the block_ids alone do not specify the block type.
         """
         if hasattr(self, "_selected_set"):
             # Already done:
@@ -560,19 +567,11 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         block_keys = self.make_selection(selected, self.children, self.max_count, "adaptive")  # pylint: disable=no-member
 
         # Publish events for analytics purposes:
-        lib_tools = self.runtime.service(self, 'library_tools')
-        format_block_keys = lambda keys: lib_tools.create_block_analytics_summary(self.location.course_key, keys)
-        self.publish_selected_children_events(
-            block_keys,
-            format_block_keys,
-            self._publish_event,
-        )
+        self.publish_events(block_keys)
 
-        # Save our selections to the user state, to ensure consistency:
+        # Store selected children
         selected = block_keys['selected']
-        self.selected = list(selected)  # TODO: this doesn't save from the LMS "Progress" page.
-        # Cache the results
-        self._selected_set = selected  # pylint: disable=attribute-defined-outside-init
+        self.store_selected(selected)
 
         return selected
 
