@@ -82,7 +82,7 @@ class AdaptiveLearningAPIMixin(object):
         return '{base_url}/students'.format(base_url=self.instance_url)
 
     @lazy
-    def event_url(self):
+    def events_url(self):
         """
         Return URL for requests dealing with events.
         """
@@ -215,13 +215,13 @@ class AdaptiveLearningAPIMixin(object):
         """
         Create read event for unit identified by `block_id` and student identified by `user_id`.
         """
-        self.create_event(block_id, user_id, 'EventRead')
+        return self.create_event(block_id, user_id, 'EventRead')
 
     def create_event(self, block_id, user_id, event_type):
         """
         Create event of type `event_type` for unit identified by `block_id` and student identified by `user_id`.
         """
-        url = self.event_url
+        url = self.events_url
         knowledge_node_student_id = self.get_knowledge_node_student_id(block_id, user_id)
         payload = {
             'knowledge_node_student_id': knowledge_node_student_id,
