@@ -6,7 +6,7 @@ import json
 import unittest
 
 import httpretty
-from mock import DEFAULT, MagicMock, Mock, patch
+from mock import DEFAULT, MagicMock, Mock, patch, call
 
 from ..util.adaptive_learning import AdaptiveLearningConfiguration, AdaptiveLearningAPIMixin
 
@@ -308,6 +308,23 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
                 self.dummy_module.knowledge_node_students_url,
                 headers=self.dummy_module.request_headers,
                 data={'knowledge_node_uid': block_id, 'student_uid': user_id}
+            )
+
+    def test_create_knowledge_node_students(self):
+        """
+        Test that `create_knowledge_node_students` method creates 'knowledge node student' objects
+        on external service, and returns them.
+        """
+        block_ids = [knowledge_node_student['id'] for knowledge_node_student in self.KNOWLEDGE_NODE_STUDENTS]
+        user_id = 'student-42'
+        with patch.object(
+                self.dummy_module, 'get_or_create_knowledge_node_student'
+        ) as patched_get_or_create_knowledge_node_student:
+            patched_get_or_create_knowledge_node_student.side_effect = self.KNOWLEDGE_NODE_STUDENTS
+            knowledge_node_students = self.dummy_module.create_knowledge_node_students(block_ids, user_id)
+            self.assertEqual(knowledge_node_students, self.KNOWLEDGE_NODE_STUDENTS)
+            patched_get_or_create_knowledge_node_student.assert_has_calls(
+                [call(block_id, user_id) for block_id in block_ids]
             )
 
     def test_create_event(self):

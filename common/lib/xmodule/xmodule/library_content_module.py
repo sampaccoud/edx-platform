@@ -428,6 +428,13 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
             anonymous_user_id = None
         return anonymous_user_id
 
+    @lazy
+    def child_block_ids(self):
+        """
+        Return list of `block_id`s identifying children of this block.
+        """
+        return [child.block_id for child in self.children]
+
     @classmethod
     def make_selection(cls, selected, children, max_count, mode):
         """
@@ -530,6 +537,8 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         """
         # Notify external service that parent unit has been viewed by learner
         self.send_unit_viewed_event()
+        # Link current user to children of this block
+        self.link_current_user_to_children()
 
         return super(AdaptiveLibraryContentModule, self).student_view(context)
 
@@ -543,6 +552,18 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         user_id = self.anonymous_user_id
         # Send "Unit viewed" event
         self.create_read_event(block_id, user_id)
+
+    def link_current_user_to_children(self):
+        """
+        On external service, establish links between current user and children of this block
+        if they don't exist.
+        """
+        # Get IDs of children
+        block_ids = self.child_block_ids
+        # Get student ID for current user
+        user_id = self.anonymous_user_id
+        # Establish links
+        self.create_knowledge_node_students(block_ids, user_id)
 
 
 @XBlock.wants('user')

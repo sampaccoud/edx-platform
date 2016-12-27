@@ -226,6 +226,18 @@ class AdaptiveLearningAPIMixin(object):
         knowledge_node_student = json.loads(response.content)
         return knowledge_node_student
 
+    def create_knowledge_node_students(self, block_ids, user_id):
+        """
+        Create 'knowledge node student' objects that link student identified by `user_id`
+        to review questions identified by block IDs listed in `block_ids`, and return them.
+        """
+        knowledge_node_students = []
+        for block_id in block_ids:
+            knowledge_node_student = self.get_or_create_knowledge_node_student(block_id, user_id)
+            knowledge_node_students.append(knowledge_node_student)
+        log.error("KNOWLEDGE_NODE_STUDENTS: {}".format(knowledge_node_students))
+        return knowledge_node_students
+
     def create_read_event(self, block_id, user_id):
         """
         Create read event for unit identified by `block_id` and student identified by `user_id`.
