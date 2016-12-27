@@ -3,6 +3,7 @@
 Utilities for adaptive learning features.
 """
 
+import hashlib
 import json
 import logging
 import requests
@@ -111,6 +112,20 @@ class AdaptiveLearningAPIMixin(object):
         return {
             'Authorization': 'Token token={access_token}'.format(access_token=access_token)
         }
+
+    def _make_anonymous_user_id(self, user_id):
+        """
+        Return anonymous ID for user identified by `user_id`.
+
+        Incorporate `course_id` and access token for external service into digest.
+        """
+        # Include the access token for this course as a salt
+        hasher = hashlib.md5()
+        hasher.update(self.adaptive_learning_configuration.access_token)
+        hasher.update(unicode(user_id))
+        hasher.update(self.course_id.to_deprecated_string().encode('utf-8'))
+        anonymous_user_id = hasher.hexdigest()
+        return anonymous_user_id
 
     def get_knowledge_node_student_id(self, block_id, user_id):
         """

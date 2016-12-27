@@ -3,7 +3,6 @@
 LibraryContent: The XBlock used to include blocks from a library in a course.
 """
 import json, logging
-import requests
 from lxml import etree
 from copy import copy
 from capa.responsetypes import registry
@@ -415,13 +414,16 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
     @lazy
     def anonymous_user_id(self):
         """
-        Return anonymous ID of current user.
+        Return anonymous ID for current user.
+
+        Note that we can't use `user_service.get_anonymous_user_id` here
+        because it only produces meaningful results for staff users.
         """
         user_service = self.runtime.service(self, 'user')
         if user_service:
             current_user = user_service.get_current_user()
-            username = current_user.opt_attrs.get('edx-platform.username')
-            anonymous_user_id = user_service.get_anonymous_user_id(username, unicode(self.course_id))
+            user_id = current_user.opt_attrs.get('edx-platform.user_id')
+            anonymous_user_id = self._make_anonymous_user_id(user_id)
         else:
             anonymous_user_id = None
         return anonymous_user_id

@@ -66,6 +66,8 @@ class DummyModule(AdaptiveLearningAPIMixin):
     """
 
     def __init__(self):
+        self.course_id = Mock()
+        self.course_id.to_deprecated_string.return_value = 'abc'
         self.parent_course = MagicMock()
         self.parent_course.adaptive_learning_configuration = ADAPTIVE_LEARNING_CONFIGURATION
 
@@ -175,6 +177,16 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
             'Authorization': 'Token token=this-is-not-a-test'
         }
         self.assertEqual(self.dummy_module.request_headers, expected_headers)
+
+    def test__make_anonymous_user_id(self):
+        """
+        Test that `_make_anonymous_user_id` returns the same ID when called multiple times.
+        """
+        user_id = 23
+        expected_anonymous_user_id = self.dummy_module._make_anonymous_user_id(user_id)
+        for dummy in range(5):
+            anonymous_user_id = self.dummy_module._make_anonymous_user_id(user_id)
+            self.assertEqual(anonymous_user_id, expected_anonymous_user_id)
 
     def test_get_students(self):
         """
