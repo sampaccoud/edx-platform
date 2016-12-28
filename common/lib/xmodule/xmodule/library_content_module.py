@@ -423,7 +423,7 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         if user_service:
             current_user = user_service.get_current_user()
             user_id = current_user.opt_attrs.get('edx-platform.user_id')
-            anonymous_user_id = self._make_anonymous_user_id(user_id)
+            anonymous_user_id = self.make_anonymous_user_id(user_id)
         else:
             anonymous_user_id = None
         return anonymous_user_id

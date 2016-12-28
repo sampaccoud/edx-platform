@@ -337,19 +337,19 @@ class AdaptiveLibraryContentModuleTestMixin(LibraryContentModuleTestMixin):
         """
         self._bind_course_module(self.lc_block)
         module = self.lc_block._xmodule
-        with patch.object(module, '_make_anonymous_user_id') as patched__make_anonymous_user_id, \
+        with patch.object(module, 'make_anonymous_user_id') as patched_make_anonymous_user_id, \
              patch.object(module.runtime, 'service') as patched_service:
             user_service_mock = Mock()
             current_user_mock = Mock()
             current_user_mock.opt_attrs.get.return_value = 42
             user_service_mock.get_current_user.return_value = current_user_mock
             patched_service.return_value = user_service_mock
-            patched__make_anonymous_user_id.return_value = 'dummy-id'
+            patched_make_anonymous_user_id.return_value = 'dummy-id'
             user_id = module.anonymous_user_id
             self.assertEqual(user_id, 'dummy-id')
             patched_service.assert_called_once_with(module, 'user')
             current_user_mock.opt_attrs.get.assert_called_once_with('edx-platform.user_id')
-            patched__make_anonymous_user_id.assert_called_once_with(42)
+            patched_make_anonymous_user_id.assert_called_once_with(42)
 
     def test_anonymous_user_id_no_user_service(self):
         """
