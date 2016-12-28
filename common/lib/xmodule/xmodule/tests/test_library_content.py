@@ -5,7 +5,7 @@ Basic unit tests for LibraryContentModule
 Higher-level tests are in `cms/djangoapps/contentstore/tests/test_libraries.py`.
 """
 from bson.objectid import ObjectId
-from mock import Mock, patch
+from mock import DEFAULT, Mock, patch
 
 from xblock.fragment import Fragment
 from xblock.runtime import Runtime as VanillaRuntime
@@ -92,7 +92,7 @@ class AdaptiveLibraryContentTest(LibraryContentTest):
 
 class LibraryContentModuleTestMixin(object):
     """
-    Basic unit tests for LibraryContentModule and AdaptiveLibraryContentModule
+    Basic unit tests for LibraryContentModule
     """
     problem_types = [
         ["multiplechoiceresponse"], ["optionresponse"], ["optionresponse", "coderesponse"],
@@ -278,6 +278,176 @@ class LibraryContentModuleTestMixin(object):
         self.assertNotIn(LibraryContentDescriptor.display_name, non_editable_metadata_fields)
 
 
+class AdaptiveLibraryContentModuleTestMixin(LibraryContentModuleTestMixin):
+    """
+    Basic unit tests for AdaptiveLibraryContentModule
+    """
+    @patch('xmodule.library_content_module.AdaptiveLearningAPIMixin.get_pending_reviews')
+    def test_children_seen_by_a_user(self, mock_get_pending_reviews):
+        """
+        Test that each student sees zero child blocks for AdaptiveLibraryContent block by default.
+        """
+        mock_get_pending_reviews.return_value = []
+
+        self.lc_block.refresh_children()
+        self.lc_block = self.store.get_item(self.lc_block.location)
+        self._bind_course_module(self.lc_block)
+
+        # Make sure the runtime knows that the block's children vary per-user:
+        self.assertTrue(self.lc_block.has_dynamic_children())
+
+        self.assertEqual(len(self.lc_block.children), len(self.lib_blocks))
+
+        # Check how many children each user will see:
+        self.assertEqual(len(self.lc_block.get_child_descriptors()), 0)
+        # Check that get_content_titles() doesn't return titles for hidden/unused children
+        self.assertEqual(len(self.lc_block.get_content_titles()), 0)
+
+    def test_parent_course(self):
+        """
+        Test that `parent_course` property uses expected API for obtaining parent course,
+        calls it with appropriate arguments, and returns appropriate value.
+        """
+        self._bind_course_module(self.lc_block)
+        module = self.lc_block._xmodule
+        with patch.object(module.runtime.modulestore, 'get_course') as patched_get_course:
+            patched_get_course.return_value = self.course
+            parent_course = module.parent_course
+            self.assertEqual(parent_course, self.course)
+            patched_get_course.assert_called_once_with(module.course_id, depth=1)
+
+    def test_parent_unit_id(self):
+        """
+        Test that `parent_unit_id` property uses expected API for obtaining parent course,
+        calls it with appropriate arguments, and returns appropriate value.
+        """
+        self._bind_course_module(self.lc_block)
+        module = self.lc_block._xmodule
+        with patch.object(module, 'get_parent') as patched_get_parent:
+            patched_get_parent.return_value = self.vertical
+            parent_unit_id = module.parent_unit_id
+            expected_parent_unit_id = self.vertical.scope_ids.usage_id.block_id
+            self.assertEqual(parent_unit_id, expected_parent_unit_id)
+            patched_get_parent.assert_called_once_with()
+
+    def test_anonymous_user_id(self):
+        """
+        Test that `parent_unit_id` property uses expected API for obtaining parent course,
+        calls it with appropriate arguments, and returns appropriate value.
+        """
+        self._bind_course_module(self.lc_block)
+        module = self.lc_block._xmodule
+        with patch.object(module, '_make_anonymous_user_id') as patched__make_anonymous_user_id, \
+             patch.object(module.runtime, 'service') as patched_service:
+            user_service_mock = Mock()
+            current_user_mock = Mock()
+            current_user_mock.opt_attrs.get.return_value = 42
+            user_service_mock.get_current_user.return_value = current_user_mock
+            patched_service.return_value = user_service_mock
+            patched__make_anonymous_user_id.return_value = 'dummy-id'
+            user_id = module.anonymous_user_id
+            self.assertEqual(user_id, 'dummy-id')
+            patched_service.assert_called_once_with(module, 'user')
+            current_user_mock.opt_attrs.get.assert_called_once_with('edx-platform.user_id')
+            patched__make_anonymous_user_id.assert_called_once_with(42)
+
+    def test_anonymous_user_id_no_user_service(self):
+        """
+        Test that `parent_unit_id` property returns `None` if user service is not available.
+        """
+        self._bind_course_module(self.lc_block)
+        module = self.lc_block._xmodule
+        with patch.object(module.runtime, 'service') as patched_service:
+            patched_service.return_value = None
+            user_id = module.anonymous_user_id
+            self.assertIsNone(user_id)
+
+    def test_child_block_ids(self):
+        """
+        Test that `child_block_ids` property returns correct list containing correct IDs.
+        """
+        self._bind_course_module(self.lc_block)
+        module = self.lc_block._xmodule
+        expected_child_block_ids = [child.block_id for child in module.children]
+        self.assertEqual(module.child_block_ids, expected_child_block_ids)
+
+    def test_send_unit_viewed_event(self):
+        """
+        Test that `send_unit_viewed_event` calls method for notifying external service
+        with appropriate arguments.
+        """
+        self._bind_course_module(self.lc_block)
+        module = self.lc_block._xmodule
+        block_id = module.parent_unit_id
+        user_id = module.anonymous_user_id
+        with patch.object(module, 'create_read_event') as patched_create_read_event:
+            module.send_unit_viewed_event()
+            patched_create_read_event.assert_called_once_with(block_id, user_id)
+
+    def test_link_current_user_to_children(self):
+        """
+        Test that `link_current_user_to_children` calls method for linking current user
+        to children of adaptive content block with appropriate arguments.
+        """
+        self._bind_course_module(self.lc_block)
+        module = self.lc_block._xmodule
+        block_ids = module.child_block_ids
+        user_id = module.anonymous_user_id
+        with patch.object(module, 'create_knowledge_node_students') as patched_create_knowledge_node_students:
+            module.link_current_user_to_children()
+            patched_create_knowledge_node_students.assert_called_once_with(block_ids, user_id)
+
+    def test_get_selections_current_user(self):
+        """
+        Test that `get_selections_current_user` calls method for obtaining list of pending reviews
+        for current user, and returns selection appropriate for current unit and block.
+        """
+        self._bind_course_module(self.lc_block)
+        module = self.lc_block._xmodule
+        parent_unit_id = module.parent_unit_id
+        user_id = module.anonymous_user_id
+        children = module.children
+        relevant_reviews = [
+            {
+                'knowledge_node_uid': parent_unit_id,
+                'review_question_uid': child.block_id,
+
+            } for child in children
+        ]
+        irrelevant_reviews = [
+            {
+                'knowledge_node_uid': 'knowledge-node-{n}'.format(n=n),
+                'review_question_uid': 'review-question-{n}'.format(n=n),
+            } for n in range(5)
+        ]
+        pending_reviews = relevant_reviews + irrelevant_reviews
+        expected_selections_current_user = [(c.block_type, c.block_id) for c in children]
+        with patch.object(module, 'get_pending_reviews') as patched_get_pending_reviews:
+            patched_get_pending_reviews.return_value = pending_reviews
+            selections_current_user = module.get_selections_current_user(children)
+            self.assertEqual(selections_current_user, expected_selections_current_user)
+            patched_get_pending_reviews.assert_called_once_with(user_id)
+
+    def test_student_view(self):
+        """
+        Test that `student_view` notifies external service that parent unit has been viewed,
+        and creates links between current user and children of block under test.
+        """
+        self._bind_course_module(self.lc_block)
+        module = self.lc_block._xmodule
+        with patch.multiple(
+                module,
+                send_unit_viewed_event=DEFAULT,
+                link_current_user_to_children=DEFAULT,
+                _get_selected_child_blocks=DEFAULT
+        ) as patched_methods:
+            patched_methods['_get_selected_child_blocks'].return_value = []
+            context = {}
+            module.student_view(context)
+            patched_methods['send_unit_viewed_event'].assert_called_once_with()
+            patched_methods['link_current_user_to_children'].assert_called_once_with()
+
+
 @patch('xmodule.library_tools.SearchEngine.get_search_engine', Mock(return_value=None, autospec=True))
 class TestLibraryContentModuleNoSearchIndex(LibraryContentModuleTestMixin, LibraryContentTest):
     """
@@ -288,7 +458,7 @@ class TestLibraryContentModuleNoSearchIndex(LibraryContentModuleTestMixin, Libra
 
 
 @patch('xmodule.library_tools.SearchEngine.get_search_engine', Mock(return_value=None, autospec=True))
-class TestAdaptiveLibraryContentModuleNoSearchIndex(LibraryContentModuleTestMixin, AdaptiveLibraryContentTest):
+class TestAdaptiveLibraryContentModuleNoSearchIndex(AdaptiveLibraryContentModuleTestMixin, AdaptiveLibraryContentTest):
     """
     Tests for LibraryContentModule when no search index is available.
     Tests fallback low-level CAPA problem introspection
@@ -299,7 +469,7 @@ class TestAdaptiveLibraryContentModuleNoSearchIndex(LibraryContentModuleTestMixi
 search_index_mock = Mock(spec=SearchEngine)  # pylint: disable=invalid-name
 
 
-class LibraryContentModuleWithSearchIndexMixin(LibraryContentModuleTestMixin):
+class SearchIndexMixin(object):
     """
     Mixin that makes a mocked search available to tests using it.
     """
@@ -318,12 +488,14 @@ class LibraryContentModuleWithSearchIndexMixin(LibraryContentModuleTestMixin):
 
     def setUp(self):
         """ Sets up search engine mock """
-        super(LibraryContentModuleWithSearchIndexMixin, self).setUp()
+        super(SearchIndexMixin, self).setUp()
         search_index_mock.search = Mock(side_effect=self._get_search_response)
 
 
 @patch('xmodule.library_tools.SearchEngine.get_search_engine', Mock(return_value=search_index_mock, autospec=True))
-class TestLibraryContentModuleWithSearchIndex(LibraryContentModuleWithSearchIndexMixin, LibraryContentTest):
+class TestLibraryContentModuleWithSearchIndex(
+        LibraryContentModuleTestMixin, SearchIndexMixin, LibraryContentTest
+):
     """
     Tests for LibraryContentModule with mocked search engine response.
     """
@@ -332,7 +504,7 @@ class TestLibraryContentModuleWithSearchIndex(LibraryContentModuleWithSearchInde
 
 @patch('xmodule.library_tools.SearchEngine.get_search_engine', Mock(return_value=search_index_mock, autospec=True))
 class TestAdaptiveLibraryContentModuleWithSearchIndex(  # pylint: disable=invalid-name
-        LibraryContentModuleWithSearchIndexMixin, AdaptiveLibraryContentTest
+        AdaptiveLibraryContentModuleTestMixin, SearchIndexMixin, AdaptiveLibraryContentTest
 ):
     """
     Tests for AdaptiveLibraryContentModule with mocked search engine response.
