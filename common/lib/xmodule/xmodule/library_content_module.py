@@ -463,7 +463,9 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         # Set of (block_type, block_id) tuples assigned to this student
         selected = set(tuple(k) for k in selected)
         # Set of (block_type, block_id) tuples previously assigned to this student
-        previously_selected = set(tuple(k) for k in kwargs.get('previously_selected'))
+        previously_selected = kwargs.get('previously_selected')
+        if previously_selected is not None:
+            previously_selected = set(tuple(k) for k in previously_selected)
 
         # Determine which of our children we will show:
         valid_block_keys = set([(c.block_type, c.block_id) for c in children])
