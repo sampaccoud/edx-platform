@@ -150,7 +150,7 @@ class LibraryContentModule(LibraryContentFields, XModule, StudioEditableModule):
     """
 
     @classmethod
-    def make_selection(cls, selected, children, max_count, mode):
+    def make_selection(cls, selected, children, max_count, mode, **kwargs):
         """
         Dynamically selects block_ids indicating which of the possible children are displayed to the current user.
 
@@ -436,7 +436,7 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         return [child.block_id for child in self.children]
 
     @classmethod
-    def make_selection(cls, selected, children, max_count, mode):
+    def make_selection(cls, selected, children, max_count, mode, **kwargs):
         """
         Dynamically selects block_ids indicating which of the possible children are displayed to the current user.
 
@@ -458,23 +458,40 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         The list of `selected` (block_type, block_id) tuples assigned to this student
         has been determined based on information from external service providing adaptive learning features,
         so we only remove blocks that are no longer valid here.
+        We don't add or remove blocks to make the number of `selected` blocks match the value of `max_count`.
         """
-        selected = set(tuple(k) for k in selected)  # set of (block_type, block_id) tuples assigned to this student
+        # Set of (block_type, block_id) tuples assigned to this student
+        selected = set(tuple(k) for k in selected)
+        # Set of (block_type, block_id) tuples previously assigned to this student
+        previously_selected = set(tuple(k) for k in kwargs.get('previously_selected'))
 
         # Determine which of our children we will show:
         valid_block_keys = set([(c.block_type, c.block_id) for c in children])
-        # Remove any selected blocks that are no longer valid:
+
+        # Remove any selected blocks that are no longer valid.
+        # The set of invalid blocks includes:
+        # - Any block that became invalid since the set of `selected` blocks was computed
+        # - Any block that is part of the set of `previously_selected` blocks,
+        #   and is *not* listed in `valid_block_keys`
         invalid_block_keys = (selected - valid_block_keys)
+        if previously_selected is not None:
+            invalid_block_keys |= (previously_selected - valid_block_keys)
+
+        # Make sure that the set of `selected` blocks does not contain any invalid blocks:
         if invalid_block_keys:
             selected -= invalid_block_keys
 
-        # `overlimit_block_keys`:
-        # External service determines number of children to show,
-        # so no need to *drop* any blocks based on value of `max_count` argument.
-
-        # `added_block_keys`:
-        # External service determines number of children to show,
-        # so no need to *add* any blocks based on value of `max_count` argument.
+        # If information about `previously_selected` blocks is available,
+        # compute `added_block_keys` as the set of blocks that are
+        # - part of the set of `selected` blocks
+        # - *not* part of the set of `previously_selected` blocks
+        # - *not* listed in `invalid_block_keys`.
+        # Note that we don't need to subtract the set of `invalid_block_keys`
+        # from the set of `selected` blocks again; we already took care of this above:
+        if previously_selected is not None:
+            added_block_keys = (selected - previously_selected)
+        else:
+            added_block_keys = set()
 
         return {
             'selected': selected,
@@ -484,11 +501,7 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
             # We never *drop* previously selected children because of it,
             # so the set of dropped children is empty by definition:
             'overlimit': set(),
-            # External service determines number of children to show,
-            # so `max_count` setting has no effect:
-            # We never *add* any children because of it,
-            # so the set of added children is empty by definition:
-            'added': set(),
+            'added': added_block_keys,
         }
 
     def selected_children(self):
@@ -504,7 +517,9 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         # This needs to happen here (at instance level) because we need access to course and block-specific data,
         # which is not available at the class level.
         selected = self.get_selections_current_user(self.children)
-        block_keys = self.make_selection(selected, self.children, self.max_count, "adaptive")  # pylint: disable=no-member
+        block_keys = self.make_selection(
+            selected, self.children, self.max_count, "adaptive", previously_selected=self.selected  # pylint: disable=no-member
+        )
 
         # Publish events for analytics purposes:
         self.publish_events(block_keys)

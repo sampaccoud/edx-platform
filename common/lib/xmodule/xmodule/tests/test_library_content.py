@@ -572,6 +572,28 @@ class LibraryContentAnalyticsMixin(object):
         self._bind_course_module(self.lc_block)
         self.lc_block.xmodule_runtime.publish = self.publisher
 
+    def _install_block_with_descendants(self):
+        """
+        Replace the blocks in the library with a block that has descendants,
+        and return the resulting blocks.
+        """
+        with self.store.bulk_operations(self.library.location.library_key):
+            self.library.children = []
+            main_vertical = self.make_block("vertical", self.library)
+            inner_vertical = self.make_block("vertical", main_vertical)
+            html_block = self.make_block("html", inner_vertical)
+            problem_block = self.make_block("problem", inner_vertical)
+            self.lc_block.refresh_children()
+        return main_vertical, inner_vertical, html_block, problem_block
+
+    def _refresh_lc_block(self):
+        """
+        Reload lc_block and set it up for a student.
+        """
+        self.lc_block = self.store.get_item(self.lc_block.location)
+        self._bind_course_module(self.lc_block)
+        self.lc_block.xmodule_runtime.publish = self.publisher
+
     def _assert_event_was_published(self, event_type):
         """
         Check that a LibraryContentModule analytics event was published by self.lc_block.
@@ -582,6 +604,43 @@ class LibraryContentAnalyticsMixin(object):
         self.assertEqual(event_name, "edx.librarycontentblock.content.{}".format(event_type))
         self.assertEqual(event_data["location"], unicode(self.lc_block.location))
         return event_data
+
+    def _assert_assigned_descendants(self, inner_vertical, html_block, problem_block):
+        """
+        Check that "assigned" event data is correct for block with descendants.
+        """
+        # Get the keys of each of our blocks, as they appear in the course:
+        course_usage_main_vertical = self.lc_block.children[0]
+        course_usage_inner_vertical = self.store.get_item(course_usage_main_vertical).children[0]
+        inner_vertical_in_course = self.store.get_item(course_usage_inner_vertical)
+        course_usage_html = inner_vertical_in_course.children[0]
+        course_usage_problem = inner_vertical_in_course.children[1]
+
+        # Trigger a publish event:
+        self.lc_block.get_child_descriptors()
+        event_data = self._assert_event_was_published("assigned")
+
+        for block_list in (event_data["added"], event_data["result"]):
+            self.assertEqual(len(block_list), 1)  # main_vertical is the only root block added, and is the only result.
+            self.assertEqual(block_list[0]["usage_key"], unicode(course_usage_main_vertical))
+
+            # Check that "descendants" is a flat, unordered list of all of main_vertical's descendants:
+            descendants_expected = (
+                (inner_vertical.location, course_usage_inner_vertical),
+                (html_block.location, course_usage_html),
+                (problem_block.location, course_usage_problem),
+            )
+            descendant_data_expected = {}
+            for lib_key, course_usage_key in descendants_expected:
+                descendant_data_expected[unicode(course_usage_key)] = {
+                    "usage_key": unicode(course_usage_key),
+                    "original_usage_key": unicode(lib_key),
+                    "original_usage_version": unicode(self.store.get_block_original_usage(course_usage_key)[1]),
+                }
+            self.assertEqual(len(block_list[0]["descendants"]), len(descendant_data_expected))
+            for descendant in block_list[0]["descendants"]:
+                self.assertEqual(descendant, descendant_data_expected.get(descendant["usage_key"]))
+
 
     def test_assigned_event(self):
         """
@@ -636,50 +695,13 @@ class LibraryContentAnalyticsMixin(object):
         Test the "assigned" event emitted includes descendant block information.
         """
         # Replace the blocks in the library with a block that has descendants:
-        with self.store.bulk_operations(self.library.location.library_key):
-            self.library.children = []
-            main_vertical = self.make_block("vertical", self.library)
-            inner_vertical = self.make_block("vertical", main_vertical)
-            html_block = self.make_block("html", inner_vertical)
-            problem_block = self.make_block("problem", inner_vertical)
-            self.lc_block.refresh_children()
+        dummy, inner_vertical, html_block, problem_block = self._install_block_with_descendants()
 
         # Reload lc_block and set it up for a student:
-        self.lc_block = self.store.get_item(self.lc_block.location)
-        self._bind_course_module(self.lc_block)
-        self.lc_block.xmodule_runtime.publish = self.publisher
+        self._refresh_lc_block()
 
-        # Get the keys of each of our blocks, as they appear in the course:
-        course_usage_main_vertical = self.lc_block.children[0]
-        course_usage_inner_vertical = self.store.get_item(course_usage_main_vertical).children[0]
-        inner_vertical_in_course = self.store.get_item(course_usage_inner_vertical)
-        course_usage_html = inner_vertical_in_course.children[0]
-        course_usage_problem = inner_vertical_in_course.children[1]
-
-        # Trigger a publish event:
-        self.lc_block.get_child_descriptors()
-        event_data = self._assert_event_was_published("assigned")
-
-        for block_list in (event_data["added"], event_data["result"]):
-            self.assertEqual(len(block_list), 1)  # main_vertical is the only root block added, and is the only result.
-            self.assertEqual(block_list[0]["usage_key"], unicode(course_usage_main_vertical))
-
-            # Check that "descendants" is a flat, unordered list of all of main_vertical's descendants:
-            descendants_expected = (
-                (inner_vertical.location, course_usage_inner_vertical),
-                (html_block.location, course_usage_html),
-                (problem_block.location, course_usage_problem),
-            )
-            descendant_data_expected = {}
-            for lib_key, course_usage_key in descendants_expected:
-                descendant_data_expected[unicode(course_usage_key)] = {
-                    "usage_key": unicode(course_usage_key),
-                    "original_usage_key": unicode(lib_key),
-                    "original_usage_version": unicode(self.store.get_block_original_usage(course_usage_key)[1]),
-                }
-            self.assertEqual(len(block_list[0]["descendants"]), len(descendant_data_expected))
-            for descendant in block_list[0]["descendants"]:
-                self.assertEqual(descendant, descendant_data_expected.get(descendant["usage_key"]))
+        # Check "assigned" event data:
+        self._assert_assigned_descendants(inner_vertical, html_block, problem_block)
 
     def test_removed_overlimit(self):
         """
@@ -747,6 +769,197 @@ class LibraryContentAnalyticsMixin(object):
         self.assertEqual(event_data["reason"], "invalid")
 
 
+class AdaptiveLibraryContentAnalyticsMixin(LibraryContentAnalyticsMixin):
+    """
+    Mixin for testing analytics features of adaptive library content modules
+    """
+    @property
+    def pending_reviews(self):
+        """
+        Return list of pending reviews that consists of relevant and irrelevant reviews.
+
+        A review is relevant to the block under test if it references the parent unit of the block,
+        as well as one of the children of the block.
+        """
+        parent_unit_id = self.vertical.scope_ids.usage_id.block_id
+        children = self.lc_block.children
+        relevant_reviews = [
+            {
+                'knowledge_node_uid': parent_unit_id,
+                'review_question_uid': child.block_id,
+
+            } for child in children
+        ]
+        irrelevant_reviews = [
+            {
+                'knowledge_node_uid': 'knowledge-node-{n}'.format(n=n),
+                'review_question_uid': 'review-question-{n}'.format(n=n),
+            } for n in range(5)
+        ]
+        pending_reviews = relevant_reviews + irrelevant_reviews
+        return pending_reviews
+
+    def _assert_event_not_published(self, event_type):
+        """
+        Check that *no* AdaptiveLibraryContentModule analytics event was published by self.lc_block.
+        """
+        self.publisher.assert_not_called()
+
+    @patch('xmodule.library_content_module.AdaptiveLearningAPIMixin.get_pending_reviews')
+    def test_assigned_event(self, mock_get_pending_reviews):
+        """
+        Test the "assigned" event emitted when a student is assigned specific blocks.
+        """
+        mock_get_pending_reviews.return_value = self.pending_reviews[:1]
+
+        # In the beginning was the lc_block and it assigned one child to the student:
+        child = self.lc_block.get_child_descriptors()[0]
+        child_lib_location, child_lib_version = self.store.get_block_original_usage(child.location)
+        self.assertIsInstance(child_lib_version, ObjectId)
+        event_data = self._assert_event_was_published("assigned")
+        block_info = {
+            "usage_key": unicode(child.location),
+            "original_usage_key": unicode(child_lib_location),
+            "original_usage_version": unicode(child_lib_version),
+            "descendants": [],
+        }
+        self.assertEqual(event_data, {
+            "location": unicode(self.lc_block.location),
+            "added": [block_info],
+            "result": [block_info],
+            "previous_count": 0,
+            "max_count": 1,
+        })
+        self.publisher.reset_mock()
+
+        # Now increase the number of pending reviews so that one more child will be added:
+        mock_get_pending_reviews.return_value = self.pending_reviews[:2]
+
+        # Clear data
+        del self.lc_block._xmodule._selected_set
+
+        # Check children
+        children = self.lc_block.get_child_descriptors()
+        self.assertEqual(len(children), 2)
+        child, new_child = children if children[0].location == child.location else reversed(children)
+
+        # Check event data
+        event_data = self._assert_event_was_published("assigned")
+        self.assertEqual(event_data["added"][0]["usage_key"], unicode(new_child.location))
+        self.assertEqual(len(event_data["result"]), 2)
+        self.assertEqual(event_data["previous_count"], 1)
+
+    @patch('xmodule.library_content_module.AdaptiveLearningAPIMixin.get_pending_reviews')
+    def test_assigned_event_no_pending_reviews(self, mock_get_pending_reviews):
+        """
+        Test that no "assigned" event is emitted if student is not assigned any blocks.
+        """
+        # In the beginning was the lc_block and it assigned zero children to the student:
+        mock_get_pending_reviews.return_value = []
+        children = self.lc_block.get_child_descriptors()
+        self.assertEqual(len(children), 0)
+        self._assert_event_not_published("assigned")
+
+    @patch('xmodule.library_content_module.AdaptiveLearningAPIMixin.get_pending_reviews')
+    def test_assigned_descendants(self, mock_get_pending_reviews):
+        """
+        Test the "assigned" event emitted includes descendant block information.
+        """
+        # Replace the blocks in the library with a block that has descendants:
+        dummy, inner_vertical, html_block, problem_block = self._install_block_with_descendants()
+
+        # Reload lc_block and set it up for a student:
+        self._refresh_lc_block()
+
+        mock_get_pending_reviews.return_value = self.pending_reviews
+
+        # Check "assigned" event data:
+        self._assert_assigned_descendants(inner_vertical, html_block, problem_block)
+
+    @patch('xmodule.library_content_module.AdaptiveLearningAPIMixin.get_pending_reviews')
+    def test_removed_overlimit(self, mock_get_pending_reviews):
+        """
+        Test that block never drops any elements based on value of `max_count` setting.
+        """
+        children = self.lc_block.children
+        mock_get_pending_reviews.return_value = self.pending_reviews
+
+        # `max_count` less than number of pending reviews (initial value is 1):
+        child_descriptors = self.lc_block.get_child_descriptors()
+        self.assertEqual(len(child_descriptors), len(children))
+        self._assert_event_not_published("removed")
+
+        # Clear data
+        del self.lc_block._xmodule._selected_set  # pylint: disable=protected-access
+
+        # `max_count` equal to number of pending reviews:
+        self.lc_block.max_count = 4
+        child_descriptors = self.lc_block.get_child_descriptors()
+        self.assertEqual(len(child_descriptors), len(children))
+        self._assert_event_not_published("removed")
+
+        # Clear data
+        del self.lc_block._xmodule._selected_set   # pylint: disable=protected-access
+
+        # `max_count` greater than number of pending reviews:
+        self.lc_block.max_count = 8
+        child_descriptors = self.lc_block.get_child_descriptors()
+        self.assertEqual(len(child_descriptors), len(children))
+        self._assert_event_not_published("removed")
+
+    @patch('xmodule.library_content_module.AdaptiveLearningAPIMixin.get_pending_reviews')
+    def test_removed_invalid(self, mock_get_pending_reviews):
+        """
+        Test the "removed" event emitted when we un-assign blocks previously assigned to a student.
+        We go from four blocks assigned, to one because the others have been deleted from the library.
+        """
+        children = self.lc_block.children
+        mock_get_pending_reviews.return_value = self.pending_reviews
+
+        # Start by assigning four child blocks to the student:
+        initial_blocks_assigned = self.lc_block.get_child_descriptors()
+        self.assertEqual(len(initial_blocks_assigned), len(children))
+
+        # Now make sure that all but one of the assigned blocks will have to be un-assigned.
+        # To cause an "invalid" event, we delete all blocks from the content library
+        # except for one of the four already assigned to the student:
+        keep_block_key = initial_blocks_assigned[0].location
+        keep_block_lib_usage_key, keep_block_lib_version = self.store.get_block_original_usage(keep_block_key)
+        self.assertIsNotNone(keep_block_lib_usage_key)
+        deleted_block_keys = [block.location for block in initial_blocks_assigned[1:]]
+        self.library.children = [keep_block_lib_usage_key]
+        self.store.update_item(self.library, self.user_id)
+        self.lc_block.refresh_children()
+
+        # Clear data
+        del self.lc_block._xmodule._selected_set  # pylint: disable=protected-access
+
+        # Update selected blocks
+        child_descriptors = self.lc_block.get_child_descriptors()
+
+        # Check that the event says that three blocks were removed, leaving one block:
+        event_data = self._assert_event_was_published("removed")
+        self.assertEqual(len(child_descriptors), 1)
+        expected_deleted_block_keys = [{
+            "usage_key": unicode(deleted_block_key),
+            "original_usage_key": None,  # Note: original_usage_key info is sadly unavailable because the block has been
+                                         # deleted so that info can no longer be retrieved
+            "original_usage_version": None,
+            "descendants": [],
+        } for deleted_block_key in deleted_block_keys]
+        self.assertEqual(len(event_data["removed"]), len(expected_deleted_block_keys))
+        for expected_deleted_block_key in expected_deleted_block_keys:
+            self.assertIn(expected_deleted_block_key, event_data["removed"])
+
+        self.assertEqual(event_data["result"], [{
+            "usage_key": unicode(keep_block_key),
+            "original_usage_key": unicode(keep_block_lib_usage_key),
+            "original_usage_version": unicode(keep_block_lib_version),
+            "descendants": [],
+        }])
+        self.assertEqual(event_data["reason"], "invalid")
+
+
 class TestLibraryContentAnalytics(LibraryContentAnalyticsMixin, LibraryContentTest):
     """
     Test analytics features of LibraryContentModule
@@ -754,7 +967,7 @@ class TestLibraryContentAnalytics(LibraryContentAnalyticsMixin, LibraryContentTe
     pass
 
 
-class TestAdaptiveLibraryContentAnalytics(LibraryContentAnalyticsMixin, AdaptiveLibraryContentTest):
+class TestAdaptiveLibraryContentAnalytics(AdaptiveLibraryContentAnalyticsMixin, AdaptiveLibraryContentTest):
     """
     Test analytics features of AdaptiveLibraryContentModule
     """
