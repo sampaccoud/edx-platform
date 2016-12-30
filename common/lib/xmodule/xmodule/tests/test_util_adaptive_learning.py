@@ -192,16 +192,18 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         """
         Test that `_get_students` method returns list of all users that external service knows about.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         self.register_students(self.STUDENTS)
-        students = self.dummy_module._get_students()
+        students = self.dummy_module._get_students(adaptive_learning_configuration)
         self.assertEqual(students, self.STUDENTS)
 
     def test__get_knowledge_node_students(self):
         """
         Test that `_get_students` method returns list of all users that external service knows about.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         self.register_knowledge_node_students(self.KNOWLEDGE_NODE_STUDENTS)
-        knowledge_node_students = self.dummy_module._get_knowledge_node_students()
+        knowledge_node_students = self.dummy_module._get_knowledge_node_students(adaptive_learning_configuration)
         self.assertEqual(knowledge_node_students, self.KNOWLEDGE_NODE_STUDENTS)
 
     def test__get_student(self):
@@ -210,15 +212,16 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         if external service knows about a given student,
         and `None` otherwise.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         self.register_students(self.STUDENTS)
 
         # Unknown student
-        student = self.dummy_module._get_student('student-999')
+        student = self.dummy_module._get_student(adaptive_learning_configuration, 'student-999')
         self.assertIsNone(student)
 
         # Known students
         for expected_student in self.STUDENTS:
-            student = self.dummy_module._get_student(expected_student['uid'])
+            student = self.dummy_module._get_student(adaptive_learning_configuration, expected_student['uid'])
             self.assertDictEqual(student, expected_student)
 
     def test__get_knowledge_node_student(self):
@@ -227,15 +230,19 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         if 'knowledge node student' object exists on external service,
         and `None` otherwise.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         self.register_knowledge_node_students(self.KNOWLEDGE_NODE_STUDENTS)
 
         # Unknown 'knowledge node student' object
-        knowledge_node_student = self.dummy_module._get_knowledge_node_student('knowledge-node-999', 'student-999')
+        knowledge_node_student = self.dummy_module._get_knowledge_node_student(
+            adaptive_learning_configuration, 'knowledge-node-999', 'student-999'
+        )
         self.assertIsNone(knowledge_node_student)
 
         # Known 'knowledge node student' object
         for expected_knowledge_node_student in self.KNOWLEDGE_NODE_STUDENTS:
             knowledge_node_student = self.dummy_module._get_knowledge_node_student(
+                adaptive_learning_configuration,
                 expected_knowledge_node_student['knowledge_node_uid'],
                 expected_knowledge_node_student['student_uid']
             )
@@ -267,6 +274,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         """
         Test that `_create_student` method creates student on external service, and returns it.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         user_id = 'student-42'
         expected_student = {
             'id': 42,
@@ -276,7 +284,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         response.content = json.dumps(expected_student)
         with patch('xmodule.util.adaptive_learning.requests') as patched_requests:
             patched_requests.post.return_value = response
-            student = self.dummy_module._create_student(user_id)
+            student = self.dummy_module._create_student(adaptive_learning_configuration, user_id)
             self.assertDictEqual(student, expected_student)
             patched_requests.post.assert_called_once_with(
                 self.dummy_module._students_url,
@@ -289,6 +297,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         Test that `_create_knowledge_node_student` method creates 'knowledge node student' object
         on external service, and returns it.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         block_id = 'knowledge-node-42'
         user_id = 'student-42'
         expected_knowledge_node_student = {
@@ -302,7 +311,9 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         response.content = json.dumps(expected_knowledge_node_student)
         with patch('xmodule.util.adaptive_learning.requests') as patched_requests:
             patched_requests.post.return_value = response
-            knowledge_node_student = self.dummy_module._create_knowledge_node_student(block_id, user_id)
+            knowledge_node_student = self.dummy_module._create_knowledge_node_student(
+                adaptive_learning_configuration, block_id, user_id
+            )
             self.assertDictEqual(knowledge_node_student, expected_knowledge_node_student)
             patched_requests.post.assert_called_once_with(
                 self.dummy_module._knowledge_node_students_url,
@@ -315,16 +326,17 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         Test that `create_knowledge_node_students` method creates 'knowledge node student' objects
         on external service, and returns them.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         block_ids = [knowledge_node_student['id'] for knowledge_node_student in self.KNOWLEDGE_NODE_STUDENTS]
         user_id = 'student-42'
         with patch.object(
-                self.dummy_module, '_get_or_create_knowledge_node_student'
-        ) as patched_get_or_create_knowledge_node_student:
-            patched_get_or_create_knowledge_node_student.side_effect = self.KNOWLEDGE_NODE_STUDENTS
+                DummyModule, '_get_or_create_knowledge_node_student'
+        ) as patched__get_or_create_knowledge_node_student:
+            patched__get_or_create_knowledge_node_student.side_effect = self.KNOWLEDGE_NODE_STUDENTS
             knowledge_node_students = self.dummy_module.create_knowledge_node_students(block_ids, user_id)
             self.assertEqual(knowledge_node_students, self.KNOWLEDGE_NODE_STUDENTS)
-            patched_get_or_create_knowledge_node_student.assert_has_calls(
-                [call(block_id, user_id) for block_id in block_ids]
+            patched__get_or_create_knowledge_node_student.assert_has_calls(
+                [call(adaptive_learning_configuration, block_id, user_id) for block_id in block_ids]
             )
 
     def test__create_event(self):
@@ -332,6 +344,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         Test that `_create_event` method creates event of appropriate type on external service,
         and returns it.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         block_id = 'knowledge-node-42'
         user_id = 'student-42'
         event_type = 'DummyEventType'
@@ -343,13 +356,15 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         }
         response = Mock()
         response.content = json.dumps(expected_event)
-        with patch.object(self.dummy_module, '_get_knowledge_node_student_id') as patched__get_knowledge_node_student_id, \
+        with patch.object(DummyModule, '_get_knowledge_node_student_id') as patched__get_knowledge_node_student_id, \
              patch('xmodule.util.adaptive_learning.requests') as patched_requests:
             patched__get_knowledge_node_student_id.return_value = 23
             patched_requests.post.return_value = response
-            event = self.dummy_module._create_event(block_id, user_id, event_type)
+            event = self.dummy_module._create_event(adaptive_learning_configuration, block_id, user_id, event_type)
             self.assertDictEqual(event, expected_event)
-            patched__get_knowledge_node_student_id.assert_called_once_with(block_id, user_id)
+            patched__get_knowledge_node_student_id.assert_called_once_with(
+                adaptive_learning_configuration, block_id, user_id
+            )
             patched_requests.post.assert_called_once_with(
                 self.dummy_module._events_url,
                 headers=self.dummy_module._request_headers,
@@ -361,6 +376,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         Test that `create_read_event` method creates an event of type `EventRead` on external service,
         and returns it.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         block_id = 'knowledge-node-42'
         user_id = 'student-42'
         expected_event = {
@@ -369,17 +385,20 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
             'type': 'EventRead',
             'payload': None,
         }
-        with patch.object(self.dummy_module, '_create_event') as patched__create_event:
+        with patch.object(DummyModule, '_create_event') as patched__create_event:
             patched__create_event.return_value = expected_event
             event = self.dummy_module.create_read_event(block_id, user_id)
             self.assertDictEqual(event, expected_event)
-            patched__create_event.assert_called_once_with(block_id, user_id, 'EventRead')
+            patched__create_event.assert_called_once_with(
+                adaptive_learning_configuration, block_id, user_id, 'EventRead'
+            )
 
     def test__get_or_create_student(self):
         """
         Test that `_get_or_create_student` method creates student on external service if it doesn't exist,
         and returns it.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         self.register_students(self.STUDENTS)
 
         user_id = 'student-42'
@@ -389,30 +408,31 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         }
 
         # Student does not exist
-        with patch.object(self.dummy_module, '_get_student') as patched__get_student, \
-             patch.object(self.dummy_module, '_create_student') as patched__create_student:
+        with patch.object(DummyModule, '_get_student') as patched__get_student, \
+             patch.object(DummyModule, '_create_student') as patched__create_student:
             patched__get_student.return_value = None
             patched__create_student.return_value = expected_student
-            student = self.dummy_module._get_or_create_student(user_id)
+            student = self.dummy_module._get_or_create_student(adaptive_learning_configuration, user_id)
             self.assertDictEqual(student, expected_student)
-            patched__get_student.assert_called_once_with(user_id)
-            patched__create_student.assert_called_once_with(user_id)
+            patched__get_student.assert_called_once_with(adaptive_learning_configuration, user_id)
+            patched__create_student.assert_called_once_with(adaptive_learning_configuration, user_id)
 
         # Student exists
-        with patch.object(self.dummy_module, '_get_student') as patched__get_student, \
-             patch.object(self.dummy_module, '_create_student') as patched__create_student:
+        with patch.object(DummyModule, '_get_student') as patched__get_student, \
+             patch.object(DummyModule, '_create_student') as patched__create_student:
             patched__get_student.return_value = expected_student
             patched__create_student.return_value = expected_student
-            student = self.dummy_module._get_or_create_student(user_id)
+            student = self.dummy_module._get_or_create_student(adaptive_learning_configuration, user_id)
             self.assertDictEqual(student, expected_student)
-            patched__get_student.assert_called_once_with(user_id)
+            patched__get_student.assert_called_once_with(adaptive_learning_configuration, user_id)
             patched__create_student.assert_not_called()
 
-    def test_get_or_create_knowledge_node_student(self):
+    def test__get_or_create_knowledge_node_student(self):
         """
         Test that `_get_or_create_knowledge_node_student` method creates 'knowledge node student' object
         on external service if it doesn't exist, and returns it.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         self.register_students(self.STUDENTS)
         self.register_knowledge_node_students(self.KNOWLEDGE_NODE_STUDENTS)
 
@@ -428,7 +448,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         }
         # Student does not exist
         with patch.multiple(
-                self.dummy_module,
+                DummyModule,
                 _get_or_create_student=DEFAULT,
                 _get_knowledge_node_student=DEFAULT,
                 _create_knowledge_node_student=DEFAULT
@@ -436,15 +456,23 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
             patched_methods['_get_or_create_student'].return_value = student
             patched_methods['_get_knowledge_node_student'].return_value = None
             patched_methods['_create_knowledge_node_student'].return_value = expected_knowledge_node_student
-            knowledge_node_student = self.dummy_module._get_or_create_knowledge_node_student(block_id, user_id)
+            knowledge_node_student = self.dummy_module._get_or_create_knowledge_node_student(
+                adaptive_learning_configuration, block_id, user_id
+            )
             self.assertDictEqual(knowledge_node_student, expected_knowledge_node_student)
-            patched_methods['_get_or_create_student'].assert_called_once_with(user_id)
-            patched_methods['_get_knowledge_node_student'].assert_called_once_with(block_id, user_id)
-            patched_methods['_create_knowledge_node_student'].assert_called_once_with(block_id, user_id)
+            patched_methods['_get_or_create_student'].assert_called_once_with(
+                adaptive_learning_configuration, user_id
+            )
+            patched_methods['_get_knowledge_node_student'].assert_called_once_with(
+                adaptive_learning_configuration, block_id, user_id
+            )
+            patched_methods['_create_knowledge_node_student'].assert_called_once_with(
+                adaptive_learning_configuration, block_id, user_id
+            )
 
         # Student exists
         with patch.multiple(
-                self.dummy_module,
+                DummyModule,
                 _get_or_create_student=DEFAULT,
                 _get_knowledge_node_student=DEFAULT,
                 _create_knowledge_node_student=DEFAULT
@@ -452,16 +480,23 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
             patched_methods['_get_or_create_student'].return_value = student
             patched_methods['_get_knowledge_node_student'].return_value = expected_knowledge_node_student
             patched_methods['_create_knowledge_node_student'].return_value = expected_knowledge_node_student
-            student = self.dummy_module._get_or_create_knowledge_node_student(block_id, user_id)
+            student = self.dummy_module._get_or_create_knowledge_node_student(
+                adaptive_learning_configuration, block_id, user_id
+            )
             self.assertDictEqual(student, expected_knowledge_node_student)
-            patched_methods['_get_or_create_student'].assert_called_once_with(user_id)
-            patched_methods['_get_knowledge_node_student'].assert_called_once_with(block_id, user_id)
+            patched_methods['_get_or_create_student'].assert_called_once_with(
+                adaptive_learning_configuration, user_id
+            )
+            patched_methods['_get_knowledge_node_student'].assert_called_once_with(
+                adaptive_learning_configuration, block_id, user_id
+            )
             patched_methods['_create_knowledge_node_student'].assert_not_called()
 
     def test__get_knowledge_node_student_id(self):
         """
         Test the `_get_knowledge_node_student_id` returns ID of a given 'knowledge node student' object.
         """
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
         block_id = 'knowledge-node-23'
         user_id = 'student-23'
         knowledge_node_student = {
@@ -471,8 +506,13 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
             'student_id': 23,
             'student_uid': user_id
         }
-        with patch.object(self.dummy_module, '_get_or_create_knowledge_node_student') as patched_get_or_create_knowledge_node_student:
+        with patch.object(DummyModule, '_get_or_create_knowledge_node_student') as \
+             patched_get_or_create_knowledge_node_student:
             patched_get_or_create_knowledge_node_student.return_value = knowledge_node_student
-            knowledge_node_student_id = self.dummy_module._get_knowledge_node_student_id(block_id, user_id)
+            knowledge_node_student_id = self.dummy_module._get_knowledge_node_student_id(
+                adaptive_learning_configuration, block_id, user_id
+            )
             self.assertEqual(knowledge_node_student_id, 42)
-            patched_get_or_create_knowledge_node_student.assert_called_once_with(block_id, user_id)
+            patched_get_or_create_knowledge_node_student.assert_called_once_with(
+                adaptive_learning_configuration, block_id, user_id
+            )

@@ -641,7 +641,6 @@ class LibraryContentAnalyticsMixin(object):
             for descendant in block_list[0]["descendants"]:
                 self.assertEqual(descendant, descendant_data_expected.get(descendant["usage_key"]))
 
-
     def test_assigned_event(self):
         """
         Test the "assigned" event emitted when a student is assigned specific blocks.
