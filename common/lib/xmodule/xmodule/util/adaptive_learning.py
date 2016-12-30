@@ -53,50 +53,12 @@ class AdaptiveLearningAPIMixin(object):
         )
 
     @lazy
-    def _adaptive_learning_url(self):
-        """
-        Return base URL for external service that provides adaptive learning features.
-
-        The base URL is a combination of the URL (url) and API version (api_version)
-        specified in the adaptive learning configuration for the parent course.
-        """
-        return self.__adaptive_learning_url(self._adaptive_learning_configuration)
-
-    @lazy
-    def _instance_url(self):
-        """
-        Return URL for requesting instance-specific data from external service
-        that provides adaptive learning features.
-        """
-        return self.__instance_url(self._adaptive_learning_configuration)
-
-    @lazy
-    def _students_url(self):
-        """
-        Return URL for requests dealing with students.
-        """
-        return self.__students_url(self._adaptive_learning_configuration)
-
-    @lazy
-    def _events_url(self):
-        """
-        Return URL for requests dealing with events.
-        """
-        return self.__events_url(self._adaptive_learning_configuration)
-
-    @lazy
-    def _knowledge_node_students_url(self):
-        """
-        Return URL for accessing 'knowledge node student' objects.
-        """
-        return self.__knowledge_node_students_url(self._adaptive_learning_configuration)
-
-    @lazy
     def _pending_reviews_url(self):
         """
         Return URL for accessing pending reviews.
         """
-        return '{base_url}/review_utils/fetch_reviews'.format(base_url=self._instance_url)
+        instance_url = self._instance_url(self._adaptive_learning_configuration)
+        return '{base_url}/review_utils/fetch_reviews'.format(base_url=instance_url)
 
     @lazy
     def _request_headers(self):
@@ -106,7 +68,7 @@ class AdaptiveLearningAPIMixin(object):
         return self.__request_headers(self._adaptive_learning_configuration)
 
     @classmethod
-    def __adaptive_learning_url(cls, adaptive_learning_configuration):
+    def _adaptive_learning_url(cls, adaptive_learning_configuration):
         """
         Return base URL for external service that provides adaptive learning features.
 
@@ -118,39 +80,39 @@ class AdaptiveLearningAPIMixin(object):
         return '{url}/{api_version}'.format(url=url, api_version=api_version)
 
     @classmethod
-    def __instance_url(cls, adaptive_learning_configuration):
+    def _instance_url(cls, adaptive_learning_configuration):
         """
         Return URL for requesting instance-specific data from external service
         that provides adaptive learning features.
         """
         instance_id = adaptive_learning_configuration.instance_id
-        adaptive_learning_url = cls.__adaptive_learning_url(adaptive_learning_configuration)
+        adaptive_learning_url = cls._adaptive_learning_url(adaptive_learning_configuration)
         return '{base_url}/instances/{instance_id}'.format(
             base_url=adaptive_learning_url, instance_id=instance_id
         )
 
     @classmethod
-    def __students_url(cls, adaptive_learning_configuration):
+    def _students_url(cls, adaptive_learning_configuration):
         """
         Return URL for requests dealing with students.
         """
-        instance_url = cls.__instance_url(adaptive_learning_configuration)
+        instance_url = cls._instance_url(adaptive_learning_configuration)
         return '{base_url}/students'.format(base_url=instance_url)
 
     @classmethod
-    def __events_url(cls, adaptive_learning_configuration):
+    def _events_url(cls, adaptive_learning_configuration):
         """
         Return URL for requests dealing with events.
         """
-        instance_url = cls.__instance_url(adaptive_learning_configuration)
+        instance_url = cls._instance_url(adaptive_learning_configuration)
         return '{base_url}/events'.format(base_url=instance_url)
 
     @classmethod
-    def __knowledge_node_students_url(cls, adaptive_learning_configuration):
+    def _knowledge_node_students_url(cls, adaptive_learning_configuration):
         """
         Return URL for accessing 'knowledge node student' objects.
         """
-        instance_url = cls.__instance_url(adaptive_learning_configuration)
+        instance_url = cls._instance_url(adaptive_learning_configuration)
         return '{base_url}/knowledge_node_students'.format(base_url=instance_url)
 
     @classmethod
@@ -221,7 +183,7 @@ class AdaptiveLearningAPIMixin(object):
         """
         Return list of all students that external service knows about.
         """
-        url = cls.__students_url(adaptive_learning_configuration)
+        url = cls._students_url(adaptive_learning_configuration)
         request_headers = cls.__request_headers(adaptive_learning_configuration)
         response = requests.get(url, headers=request_headers)
         students = json.loads(response.content)
@@ -233,7 +195,7 @@ class AdaptiveLearningAPIMixin(object):
         Create student identified by `user_id` on external service,
         and return it.
         """
-        url = cls.__students_url(adaptive_learning_configuration)
+        url = cls._students_url(adaptive_learning_configuration)
         payload = {'uid': user_id}
         request_headers = cls.__request_headers(adaptive_learning_configuration)
         response = requests.post(url, headers=request_headers, data=payload)
@@ -262,7 +224,7 @@ class AdaptiveLearningAPIMixin(object):
         """
         Return list of all 'knowledge node student' objects for this course.
         """
-        url = cls.__knowledge_node_students_url(adaptive_learning_configuration)
+        url = cls._knowledge_node_students_url(adaptive_learning_configuration)
         request_headers = cls.__request_headers(adaptive_learning_configuration)
         response = requests.get(url, headers=request_headers)
         links = json.loads(response.content)
@@ -274,7 +236,7 @@ class AdaptiveLearningAPIMixin(object):
         Create 'knowledge node student' object that links student identified by `user_id`
         to unit identified by `block_id`, and return it.
         """
-        url = cls.__knowledge_node_students_url(adaptive_learning_configuration)
+        url = cls._knowledge_node_students_url(adaptive_learning_configuration)
         request_headers = cls.__request_headers(adaptive_learning_configuration)
         payload = {'knowledge_node_uid': block_id, 'student_uid': user_id}
         response = requests.post(url, headers=request_headers, data=payload)
@@ -287,7 +249,7 @@ class AdaptiveLearningAPIMixin(object):
         Create event of type `event_type` for unit identified by `block_id` and student identified by `user_id`,
         sending any kwargs in `data` along with the default payload.
         """
-        url = cls.__events_url(adaptive_learning_configuration)
+        url = cls._events_url(adaptive_learning_configuration)
         request_headers = cls.__request_headers(adaptive_learning_configuration)
         knowledge_node_student_id = cls._get_knowledge_node_student_id(
             adaptive_learning_configuration, block_id, user_id

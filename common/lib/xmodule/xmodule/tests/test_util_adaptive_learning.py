@@ -19,12 +19,15 @@ ADAPTIVE_LEARNING_CONFIGURATION = {
     'access_token': 'this-is-not-a-test',
 }
 
-URLS = {
+URL_METHODS = {
     '_adaptive_learning_url': 'https://dummy.com/v42',
     '_instance_url': 'https://dummy.com/v42/instances/23',
     '_students_url': 'https://dummy.com/v42/instances/23/students',
     '_events_url': 'https://dummy.com/v42/instances/23/events',
     '_knowledge_node_students_url': 'https://dummy.com/v42/instances/23/knowledge_node_students',
+}
+
+URL_PROPERTIES = {
     '_pending_reviews_url': 'https://dummy.com/v42/instances/23/review_utils/fetch_reviews'
 }
 
@@ -101,19 +104,19 @@ class AdaptiveLearningServiceMixin(object):
         """
         Register a mock response listing students that external service knows about.
         """
-        self._mock_get_request(URLS['_students_url'], students)
+        self._mock_get_request(URL_METHODS['_students_url'], students)
 
     def register_knowledge_node_students(self, knowledge_node_students):
         """
         Register a mock response listing students that external service knows about.
         """
-        self._mock_get_request(URLS['_knowledge_node_students_url'], knowledge_node_students)
+        self._mock_get_request(URL_METHODS['_knowledge_node_students_url'], knowledge_node_students)
 
     def register_pending_reviews(self, pending_reviews):
         """
         Register a mock response listing students that external service knows about.
         """
-        self._mock_get_request(URLS['_pending_reviews_url'], pending_reviews)
+        self._mock_get_request(URL_PROPERTIES['_pending_reviews_url'], pending_reviews)
 
 
 @ddt.ddt
@@ -164,11 +167,15 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
             self.assertTrue(hasattr(adaptive_learning_configuration, attribute))
             self.assertEqual(getattr(adaptive_learning_configuration, attribute), value)
 
-    def test_urls(self):
+    def test_url_methods(self):
         """
-        Test that `*_url` properties return appropriate values.
+        Test that `*_url` methods and properties return appropriate values.
         """
-        for url_property, expected_value in URLS.items():
+        adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
+        for url_method, expected_value in URL_METHODS.items():
+            self.assertTrue(hasattr(self.dummy_module, url_method))
+            self.assertEqual(getattr(self.dummy_module, url_method)(adaptive_learning_configuration), expected_value)
+        for url_property, expected_value in URL_PROPERTIES.items():
             self.assertTrue(hasattr(self.dummy_module, url_property))
             self.assertEqual(getattr(self.dummy_module, url_property), expected_value)
 
@@ -278,6 +285,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         Test that `_create_student` method creates student on external service, and returns it.
         """
         adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
+        url = self.dummy_module._students_url(adaptive_learning_configuration)
         user_id = 'student-42'
         expected_student = {
             'id': 42,
@@ -290,7 +298,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
             student = self.dummy_module._create_student(adaptive_learning_configuration, user_id)
             self.assertDictEqual(student, expected_student)
             patched_requests.post.assert_called_once_with(
-                self.dummy_module._students_url,
+                url,
                 headers=self.dummy_module._request_headers,
                 data={'uid': user_id}
             )
@@ -301,6 +309,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         on external service, and returns it.
         """
         adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
+        url = self.dummy_module._knowledge_node_students_url(adaptive_learning_configuration)
         block_id = 'knowledge-node-42'
         user_id = 'student-42'
         expected_knowledge_node_student = {
@@ -319,7 +328,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
             )
             self.assertDictEqual(knowledge_node_student, expected_knowledge_node_student)
             patched_requests.post.assert_called_once_with(
-                self.dummy_module._knowledge_node_students_url,
+                url,
                 headers=self.dummy_module._request_headers,
                 data={'knowledge_node_uid': block_id, 'student_uid': user_id}
             )
@@ -348,6 +357,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
         and returns it.
         """
         adaptive_learning_configuration = self.dummy_module._adaptive_learning_configuration
+        url = self.dummy_module._events_url(adaptive_learning_configuration)
         block_id = 'knowledge-node-42'
         user_id = 'student-42'
         event_type = 'DummyEventType'
@@ -369,7 +379,7 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
                 adaptive_learning_configuration, block_id, user_id
             )
             patched_requests.post.assert_called_once_with(
-                self.dummy_module._events_url,
+                url,
                 headers=self.dummy_module._request_headers,
                 data={'knowledge_node_student_id': 23, 'event_type': event_type}
             )
