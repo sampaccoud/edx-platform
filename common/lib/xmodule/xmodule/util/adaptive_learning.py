@@ -105,74 +105,6 @@ class AdaptiveLearningAPIMixin(object):
         """
         return self.__request_headers(self._adaptive_learning_configuration)
 
-    def _get_knowledge_node_student_id(self, block_id, user_id):
-        """
-        Return ID of 'knowledge node student' object linking student identified by `user_id`
-        to unit identified by `block_id`.
-        """
-        return self.__get_knowledge_node_student_id(block_id, user_id, self._adaptive_learning_configuration)
-
-    def _get_or_create_knowledge_node_student(self, block_id, user_id):
-        """
-        Return 'knowledge node student' object for user identified by `user_id`
-        and unit identified by `block_id`.
-        """
-        return self.__get_or_create_knowledge_node_student(block_id, user_id, self._adaptive_learning_configuration)
-
-    def _get_or_create_student(self, user_id):
-        """
-        Create a new student on external service if it doesn't exist,
-        and return it.
-        """
-        return self.__get_or_create_student(user_id, self._adaptive_learning_configuration)
-
-    def _get_student(self, user_id):
-        """
-        Return external information about student identified by `user_id`,
-        or None if external service does not know about student.
-        """
-        return self.__get_student(user_id, self._adaptive_learning_configuration)
-
-    def _get_students(self):
-        """
-        Return list of all students that external service knows about.
-        """
-        return self.__get_student(self._adaptive_learning_configuration)
-
-    def _create_student(self, user_id):
-        """
-        Create student identified by `user_id` on external service,
-        and return it.
-        """
-        return self.__create_student(user_id, self._adaptive_learning_configuration)
-
-    def _get_knowledge_node_student(self, block_id, user_id):
-        """
-        Return 'knowledge node student' object for user identified by `user_id`
-        and unit identified by `block_id`, or None if it does not exist.
-        """
-        return self.__get_knowledge_node_student(block_id, user_id, self._adaptive_learning_configuration)
-
-    def _get_knowledge_node_students(self):
-        """
-        Return list of all 'knowledge node student' objects for this course.
-        """
-        return self.__get_knowledge_node_students(self._adaptive_learning_configuration)
-
-    def _create_knowledge_node_student(self, block_id, user_id):
-        """
-        Create 'knowledge node student' object that links student identified by `user_id`
-        to unit identified by `block_id`, and return it.
-        """
-        return self.__create_knowledge_node_student(block_id, user_id, self._adaptive_learning_configuration)
-
-    def _create_event(self, block_id, user_id, event_type, **data):
-        """
-        Create event of type `event_type` for unit identified by `block_id` and student identified by `user_id`,
-        sending any kwargs in `data` along with the default payload.
-        """
-        return self.__create_event(self._adaptive_learning_configuration, block_id, user_id, event_type, **data)
-
     @classmethod
     def __adaptive_learning_url(cls, adaptive_learning_configuration):
         """
@@ -232,48 +164,71 @@ class AdaptiveLearningAPIMixin(object):
         }
 
     @classmethod
-    def __create_knowledge_node_student(cls, block_id, user_id, adaptive_learning_configuration):
+    def _get_knowledge_node_student_id(cls, adaptive_learning_configuration, block_id, user_id):
         """
-        Create 'knowledge node student' object that links student identified by `user_id`
-        to unit identified by `block_id`, and return it.
+        Return ID of 'knowledge node student' object linking student identified by `user_id`
+        to unit identified by `block_id`.
         """
-        url = cls.__knowledge_node_students_url(adaptive_learning_configuration)
-        request_headers = cls.__request_headers(adaptive_learning_configuration)
-        payload = {'knowledge_node_uid': block_id, 'student_uid': user_id}
-        response = requests.post(url, headers=request_headers, data=payload)
-        knowledge_node_student = json.loads(response.content)
+        knowledge_node_student = cls._get_or_create_knowledge_node_student(
+            adaptive_learning_configuration, block_id, user_id
+        )
+        return knowledge_node_student.get('id')
+
+    @classmethod
+    def _get_or_create_knowledge_node_student(cls, adaptive_learning_configuration, block_id, user_id):
+        """
+        Return 'knowledge node student' object for user identified by `user_id`
+        and unit identified by `block_id`.
+        """
+        # Create student
+        cls._get_or_create_student(adaptive_learning_configuration, user_id)
+        # Link student to unit
+        knowledge_node_student = cls._get_knowledge_node_student(
+            adaptive_learning_configuration, block_id, user_id
+        )
+        if knowledge_node_student is None:
+            knowledge_node_student = cls._create_knowledge_node_student(
+                adaptive_learning_configuration, block_id, user_id
+            )
         return knowledge_node_student
 
     @classmethod
-    def __get_knowledge_node_students(cls, adaptive_learning_configuration):
+    def _get_or_create_student(cls, adaptive_learning_configuration, user_id):
         """
-        Return list of all 'knowledge node student' objects for this course.
+        Create a new student on external service if it doesn't exist,
+        and return it.
         """
-        url = cls.__knowledge_node_students_url(adaptive_learning_configuration)
+        student = cls._get_student(adaptive_learning_configuration, user_id)
+        if student is None:
+            student = cls._create_student(adaptive_learning_configuration, user_id)
+        return student
+
+    @classmethod
+    def _get_student(cls, adaptive_learning_configuration, user_id):
+        """
+        Return external information about student identified by `user_id`,
+        or None if external service does not know about student.
+        """
+        students = cls._get_students(adaptive_learning_configuration)
+        try:
+            student = next(s for s in students if s.get('uid') == user_id)
+        except StopIteration:
+            student = None
+        return student
+
+    @classmethod
+    def _get_students(cls, adaptive_learning_configuration):
+        """
+        Return list of all students that external service knows about.
+        """
+        url = cls.__students_url(adaptive_learning_configuration)
         request_headers = cls.__request_headers(adaptive_learning_configuration)
         response = requests.get(url, headers=request_headers)
-        links = json.loads(response.content)
-        return links
+        students = json.loads(response.content)
+        return students
 
     @classmethod
-    def __get_knowledge_node_student(cls, block_id, user_id, adaptive_learning_configuration):
-        """
-        Return 'knowledge node student' object for user identified by `user_id`
-        and unit identified by `block_id`, or None if it does not exist.
-        """
-        # Get 'knowledge node student' objects
-        links = cls.__get_knowledge_node_students(adaptive_learning_configuration)
-        # Filter them by `block_id` and `user_id`
-        try:
-            link = next(
-                l for l in links if l.get('knowledge_node_uid') == block_id and l.get('student_uid') == user_id
-            )
-        except StopIteration:
-            link = None
-        return link
-
-    @classmethod
-    def __create_student(cls, user_id, adaptive_learning_configuration):
+    def _create_student(cls, adaptive_learning_configuration, user_id):
         """
         Create student identified by `user_id` on external service,
         and return it.
@@ -286,79 +241,56 @@ class AdaptiveLearningAPIMixin(object):
         return student
 
     @classmethod
-    def __get_students(cls, adaptive_learning_configuration):
-        """
-        Return list of all students that external service knows about.
-        """
-        url = cls.__students_url(adaptive_learning_configuration)
-        request_headers = cls.__request_headers(adaptive_learning_configuration)
-        response = requests.get(url, headers=request_headers)
-        students = json.loads(response.content)
-        return students
-
-    @classmethod
-    def __get_student(cls, user_id, adaptive_learning_configuration):
-        """
-        Return external information about student identified by `user_id`,
-        or None if external service does not know about student.
-        """
-        students = cls.__get_students(adaptive_learning_configuration)
-        try:
-            student = next(s for s in students if s.get('uid') == user_id)
-        except StopIteration:
-            student = None
-        return student
-
-    @classmethod
-    def __get_or_create_student(cls, user_id, adaptive_learning_configuration):
-        """
-        Create a new student on external service if it doesn't exist,
-        and return it.
-        """
-        student = cls.__get_student(user_id, adaptive_learning_configuration)
-        if student is None:
-            student = cls.__create_student(user_id, adaptive_learning_configuration)
-        return student
-
-    @classmethod
-    def __get_or_create_knowledge_node_student(cls, block_id, user_id, adaptive_learning_configuration):
+    def _get_knowledge_node_student(cls, adaptive_learning_configuration, block_id, user_id):
         """
         Return 'knowledge node student' object for user identified by `user_id`
-        and unit identified by `block_id`.
+        and unit identified by `block_id`, or None if it does not exist.
         """
-        # Create student
-        cls.__get_or_create_student(user_id, adaptive_learning_configuration)
-        # Link student to unit
-        knowledge_node_student = cls.__get_knowledge_node_student(
-            block_id, user_id, adaptive_learning_configuration
-        )
-        if knowledge_node_student is None:
-            knowledge_node_student = cls.__create_knowledge_node_student(
-                block_id, user_id, adaptive_learning_configuration
+        # Get 'knowledge node student' objects
+        links = cls._get_knowledge_node_students(adaptive_learning_configuration)
+        # Filter them by `block_id` and `user_id`
+        try:
+            link = next(
+                l for l in links if l.get('knowledge_node_uid') == block_id and l.get('student_uid') == user_id
             )
+        except StopIteration:
+            link = None
+        return link
+
+    @classmethod
+    def _get_knowledge_node_students(cls, adaptive_learning_configuration):
+        """
+        Return list of all 'knowledge node student' objects for this course.
+        """
+        url = cls.__knowledge_node_students_url(adaptive_learning_configuration)
+        request_headers = cls.__request_headers(adaptive_learning_configuration)
+        response = requests.get(url, headers=request_headers)
+        links = json.loads(response.content)
+        return links
+
+    @classmethod
+    def _create_knowledge_node_student(cls, adaptive_learning_configuration, block_id, user_id):
+        """
+        Create 'knowledge node student' object that links student identified by `user_id`
+        to unit identified by `block_id`, and return it.
+        """
+        url = cls.__knowledge_node_students_url(adaptive_learning_configuration)
+        request_headers = cls.__request_headers(adaptive_learning_configuration)
+        payload = {'knowledge_node_uid': block_id, 'student_uid': user_id}
+        response = requests.post(url, headers=request_headers, data=payload)
+        knowledge_node_student = json.loads(response.content)
         return knowledge_node_student
 
     @classmethod
-    def __get_knowledge_node_student_id(cls, block_id, user_id, adaptive_learning_configuration):
-        """
-        Return ID of 'knowledge node student' object linking student identified by `user_id`
-        to unit identified by `block_id`.
-        """
-        knowledge_node_student = cls.__get_or_create_knowledge_node_student(
-            block_id, user_id, adaptive_learning_configuration
-        )
-        return knowledge_node_student.get('id')
-
-    @classmethod
-    def __create_event(cls, adaptive_learning_configuration, block_id, user_id, event_type, **data):
+    def _create_event(cls, adaptive_learning_configuration, block_id, user_id, event_type, **data):
         """
         Create event of type `event_type` for unit identified by `block_id` and student identified by `user_id`,
         sending any kwargs in `data` along with the default payload.
         """
         url = cls.__events_url(adaptive_learning_configuration)
         request_headers = cls.__request_headers(adaptive_learning_configuration)
-        knowledge_node_student_id = cls.__get_knowledge_node_student_id(
-            block_id, user_id, adaptive_learning_configuration
+        knowledge_node_student_id = cls._get_knowledge_node_student_id(
+            adaptive_learning_configuration, block_id, user_id
         )
         payload = {
             'knowledge_node_student_id': knowledge_node_student_id,
@@ -372,7 +304,7 @@ class AdaptiveLearningAPIMixin(object):
         return event
 
     @classmethod
-    def _make_anonymous_user_id(cls, course_id, user_id, adaptive_learning_configuration):
+    def _make_anonymous_user_id(cls, adaptive_learning_configuration, course_id, user_id):
         """
         Return anonymous ID for user identified by `user_id`.
 
@@ -397,14 +329,14 @@ class AdaptiveLearningAPIMixin(object):
         adaptive_learning_configuration = AdaptiveLearningConfiguration(
             **course.adaptive_learning_configuration
         )
-        user_id = cls._make_anonymous_user_id(course.id, user_id, adaptive_learning_configuration)
+        user_id = cls._make_anonymous_user_id(adaptive_learning_configuration, course.id, user_id)
         if result == 'correct':
             result = '100'
         elif result == 'incorrect':
             result = '0'
         data = {'payload': result}
 
-        return cls.__create_event(adaptive_learning_configuration, block_id, user_id, 'EventResult', **data)
+        return cls._create_event(adaptive_learning_configuration, block_id, user_id, 'EventResult', **data)
 
     def make_anonymous_user_id(self, user_id):
         """
@@ -412,13 +344,13 @@ class AdaptiveLearningAPIMixin(object):
 
         Incorporate `course_id` and access token for external service into digest.
         """
-        return self._make_anonymous_user_id(self.course_id, user_id, self._adaptive_learning_configuration)
+        return self._make_anonymous_user_id(self._adaptive_learning_configuration, self.course_id, user_id)
 
     def create_read_event(self, block_id, user_id):
         """
         Create read event for unit identified by `block_id` and student identified by `user_id`.
         """
-        return self._create_event(block_id, user_id, 'EventRead')
+        return self._create_event(self._adaptive_learning_configuration, block_id, user_id, 'EventRead')
 
     def create_knowledge_node_students(self, block_ids, user_id):
         """
@@ -427,7 +359,9 @@ class AdaptiveLearningAPIMixin(object):
         """
         knowledge_node_students = []
         for block_id in block_ids:
-            knowledge_node_student = self._get_or_create_knowledge_node_student(block_id, user_id)
+            knowledge_node_student = self._get_or_create_knowledge_node_student(
+                self._adaptive_learning_configuration, block_id, user_id
+            )
             knowledge_node_students.append(knowledge_node_student)
         return knowledge_node_students
 
