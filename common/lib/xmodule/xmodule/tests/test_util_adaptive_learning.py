@@ -5,6 +5,7 @@ Tests for adaptive learning utilities.
 import json
 import unittest
 
+import ddt
 import httpretty
 from mock import DEFAULT, MagicMock, Mock, patch, call
 
@@ -26,6 +27,7 @@ URLS = {
     '_knowledge_node_students_url': 'https://dummy.com/v42/instances/23/knowledge_node_students',
     '_pending_reviews_url': 'https://dummy.com/v42/instances/23/review_utils/fetch_reviews'
 }
+
 
 class TestAdaptiveLearningConfiguration(unittest.TestCase):
     """
@@ -114,6 +116,7 @@ class AdaptiveLearningServiceMixin(object):
         self._mock_get_request(URLS['_pending_reviews_url'], pending_reviews)
 
 
+@ddt.ddt
 @httpretty.activate
 class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMixin):
     """
@@ -392,6 +395,58 @@ class TestAdaptiveLearningAPIMixin(unittest.TestCase, AdaptiveLearningServiceMix
             patched__create_event.assert_called_once_with(
                 adaptive_learning_configuration, block_id, user_id, 'EventRead'
             )
+
+    @ddt.data(
+        ('correct', '100'), ('incorrect', '0')
+    )
+    @ddt.unpack
+    def test_create_result_event(self, success, payload):
+        """
+        Test that `create_result_event` method creates an event of type `EventResult` on external service,
+        and returns it.
+        """
+        course = self.dummy_module.parent_course
+        adaptive_learning_configuration = AdaptiveLearningConfiguration(**course.adaptive_learning_configuration)
+        block_id = 'knowledge-node-42'
+        user_id = 'student-42'
+        expected_event = {
+            'id': 42,
+            'knowledge_node_student_id': 42,
+            'type': 'EventResult',
+            'payload': payload,
+        }
+        with patch.object(DummyModule, '_make_anonymous_user_id') as patched__make_anonymous_user_id, \
+             patch.object(DummyModule, '_create_event') as patched__create_event:
+            patched__make_anonymous_user_id.return_value = user_id
+            patched__create_event.return_value = expected_event
+            event = self.dummy_module.create_result_event(course, block_id, user_id, success)
+            self.assertDictEqual(event, expected_event)
+            # Assert that _create_event was called with appropriate arguments.
+            # Note that we can't use `assert_called_once_with` here.
+            # This is because `create_result_event` instantiates a new AdaptiveLearningConfiguration object,
+            # and this test has no way of obtaining a reference to this object.
+            # As a result, we can't pass the right object to `assert_called_once_with` here,
+            # and need to check the arguments "manually" instead.
+            patched__create_event.assert_called_once()
+            args, kwargs = patched__create_event.call_args
+            adaptive_learning_configuration_arg, block_id_arg, user_id_arg, event_type_arg = args
+            self.assertIsInstance(adaptive_learning_configuration_arg, AdaptiveLearningConfiguration)
+            self.assertEqual(
+                adaptive_learning_configuration_arg.url, adaptive_learning_configuration.url
+            )
+            self.assertEqual(
+                adaptive_learning_configuration_arg.api_version, adaptive_learning_configuration.api_version
+            )
+            self.assertEqual(
+                adaptive_learning_configuration_arg.instance_id, adaptive_learning_configuration.instance_id
+            )
+            self.assertEqual(
+                adaptive_learning_configuration_arg.access_token, adaptive_learning_configuration.access_token
+            )
+            self.assertEqual(block_id_arg, block_id)
+            self.assertEqual(user_id_arg, user_id)
+            self.assertEqual(event_type_arg, 'EventResult')
+            self.assertEqual(kwargs, {'payload': payload})
 
     def test__get_or_create_student(self):
         """
