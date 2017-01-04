@@ -1,5 +1,5 @@
 """
-Adaptive Domoscio
+Adaptive Learning
 """
 import calendar
 import datetime
@@ -30,8 +30,8 @@ def revisions(request):
 
 def _get_pending_revisions(user):
     """
-    Returns information about each problem that needs revision for a given user, including a display name, the due date
-    of the revision, and a courseware URL.
+    Returns information about each problem that needs revision for a given user,
+    including a display name, the due date of the revision, and a courseware URL.
     """
     # TODO: Grab all of the AdaptiveLibraryContentModules for the user.
     #       to the Domoscio API.

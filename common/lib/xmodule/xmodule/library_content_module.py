@@ -542,8 +542,6 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         selections = []
         for pending_review in pending_reviews:
             unit_id = pending_review.get('knowledge_node_uid')
-            # TODO: Adjust if necessary (name of property that specifies block ID of review question
-            # might differ from the one we are currently using):
             question_id = pending_review.get('review_question_uid')
             if unit_id == self.parent_unit_id and question_id in valid_block_keys:
                 selections.append(valid_block_keys[question_id])
