@@ -2092,7 +2092,7 @@ INSTALLED_APPS = (
     # Email marketing integration
     'email_marketing',
 
-    'adaptive_domoscio',
+    'adaptive_learning',
 )
 
 # Migrations which are not in the standard module "migrations"

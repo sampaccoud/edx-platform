@@ -181,7 +181,8 @@ from openedx.core.djangolib.markup import HTML, Text
             ## END FUN
             </li>
 
-            <%include file="${static.get_template_path('dashboard/_dashboard_status_verification.html')}" />
+          ## We remove the identity verification status display, because this process is entrusted to proctorU
+          ## <%include file="${static.get_template_path('dashboard/_dashboard_status_verification.html')}" />
 
           </ul>
 
