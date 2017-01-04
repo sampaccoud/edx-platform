@@ -2,7 +2,9 @@
 
 from __future__ import absolute_import
 
+from functools import reduce
 import logging
+import operator
 
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
@@ -29,21 +31,11 @@ class AdaptiveLearningBackend(BaseBackend):
 
     @staticmethod
     def _get_from_event(event, path, default=None):
-        """
-        Extract value of `path` from `event` dictionary and return it.
-
-        If `path` does not exist in `event`, return `default` value instead.
-        """
         path_components = path.split('.')
-        current_value = event
-        for path_component in path_components:
-            try:
-                current_value = current_value.get(path_component, default)
-            except AttributeError:
-                # Requested `path` exceeds depth of `event`:
-                # `current_value` is a leaf (not a dictionary)
-                return default
-        return current_value
+        try:
+            return reduce(operator.getitem, path_components, event)
+        except (KeyError, TypeError):
+            return default
 
     def is_problem_check(self, event):
         """
