@@ -590,6 +590,16 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         api_client = AdaptiveLearningAPIClient(course)
         api_client.create_result_event(block_id, user_id, result)
 
+    @classmethod
+    def fetch_pending_reviews(cls, course, user_id):
+        """
+        Return pending reviews for user identified by `user_id`
+        using adaptive learning configuration from `course`.
+        """
+        api_client = AdaptiveLearningAPIClient(course)
+        pending_reviews = api_client.get_pending_reviews(user_id)
+        return pending_reviews
+
 
 @XBlock.wants('user')
 @XBlock.wants('library_tools')  # Only needed in studio
