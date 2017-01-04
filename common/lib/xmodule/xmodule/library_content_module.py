@@ -547,10 +547,6 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
             question_id = pending_review.get('review_question_uid')
             if unit_id == self.parent_unit_id and question_id in valid_block_keys:
                 selections.append(valid_block_keys[question_id])
-        # FIXME:
-        # Make it possible to test changes manually by temporarily showing all children.
-        # Will revert this before merging PR.
-        selections += valid_block_keys.values()
         return selections
 
     def student_view(self, context):
