@@ -1,19 +1,16 @@
 """
 Adaptive Learning
 """
-import calendar
-from dateutil import parser
 import json
 
 from django.contrib.auth.decorators import login_required
-from django.core.urlresolvers import reverse
 from django.http import HttpResponse
 from django.views.decorators.csrf import ensure_csrf_cookie
 
 from xmodule.modulestore.django import modulestore
-from xmodule.modulestore.search import path_to_location, navigation_index
-from xmodule.library_content_module import AdaptiveLibraryContentModule
 from xmodule.util.adaptive_learning import AdaptiveLearningConfiguration
+
+from adaptive_learning.utils import get_pending_reviews, make_revisions
 
 
 @login_required
@@ -24,13 +21,13 @@ def revisions(request):
     """
     user = request.user
 
-    pending_revisions = _get_pending_revisions(user)
+    pending_revisions = get_pending_revisions(user)
     json_revisions = json.dumps(pending_revisions)
 
     return HttpResponse(json_revisions)
 
 
-def _get_pending_revisions(user):
+def get_pending_revisions(user):
     """
     Return information about each problem that needs revision for a given user,
     including a display name, the due date of the revision, and a courseware URL.
@@ -38,7 +35,7 @@ def _get_pending_revisions(user):
     # Get all courses:
     # Configuration for communicating with external service that provides adaptive learning features
     # is course-specific, so we need to collect pending revisions for one course at a time.
-    courses = _get_courses()
+    courses = modulestore().get_courses()
 
     # Initialize list of pending revisions
     pending_revisions = []
@@ -51,119 +48,11 @@ def _get_pending_revisions(user):
         if AdaptiveLearningConfiguration.is_meaningful(course.adaptive_learning_configuration):
 
             # Collect pending reviews for this `course` and current `user`
-            pending_reviews = _get_pending_reviews(course, user.id)
+            pending_reviews = get_pending_reviews(course, user.id)
 
             # Create revision for each pending review, and add it to the list of pending revisions
             if pending_reviews:
-                course_revisions = _make_revisions(course, pending_reviews)
+                course_revisions = make_revisions(course, pending_reviews)
                 pending_revisions.extend(course_revisions)
 
     return pending_revisions
-
-
-def _get_courses():
-    """
-    Return list of all courses from `modulestore`.
-    """
-    return modulestore().get_courses()
-
-
-def _get_pending_reviews(course, user_id):
-    """
-    Return pending reviews for `course` and user identified by `user_id`.
-
-    Use API provided by `AdaptiveLibraryContentModule` to fetch a raw list of pending reviews,
-    then turn it into a format optimized for reading data that is relevant for displaying revisions
-    on the dashboard.
-
-    More specifically, turn raw list of pending reviews into a dictionary
-    that maps values of the 'review_question_uid' property
-    to corresponding values of the 'next_review_at' property.
-
-    - The 'review_question_uid' property of a pending review specifies the `block_id`
-      of the problem to review.
-
-    - The 'next_review_at' property of a pending review specifies the due date
-      for the review.
-    """
-    pending_reviews = AdaptiveLibraryContentModule.fetch_pending_reviews(course, user_id)
-    return {
-        pending_review['review_question_uid']: pending_review['next_review_at']
-        for pending_review in pending_reviews
-    }
-
-
-def _make_revisions(course, pending_reviews):
-    """
-    Return list of revisions for `pending_reviews`.
-
-    To compile this list, we need to retrieve information
-    about each of the blocks listed in `pending_reviews` from modulestore.
-
-    However, it is not possible to load a block from modulestore using only its `block_id`.
-    So instead, we fetch all Adaptive Content Blocks belonging to `course`,
-    and create a revision for each child of an ACB that has a pending review
-    (i.e., each child whose `block_id` is listed in `pending_reviews`).
-    """
-
-    def usage_key_filter(usage_key):
-        """
-        Return True if `block_id` of `usage_key` is listed in `pending_reviews`,
-        else False.
-        """
-        return usage_key.block_id in pending_reviews
-
-    revisions = []
-    adaptive_content_blocks = _get_adaptive_content_blocks(course)
-    for adaptive_content_block in adaptive_content_blocks:
-        relevant_children = adaptive_content_block.get_children(usage_key_filter=usage_key_filter)
-        for child in relevant_children:
-            revision = _make_revision(child, pending_reviews)
-            revisions.append(revision)
-    return revisions
-
-
-def _get_adaptive_content_blocks(course):
-    """
-    Return list of Adaptive Content Blocks belonging to `course`.
-    """
-    course_key = course.location.course_key
-    return modulestore().get_items(course_key, qualifiers={'category': 'adaptive_library_content'})
-
-
-def _make_revision(child, due_dates):
-    """
-    Return revision containing URL, name, and due date for `child`.
-    """
-    usage_key = child.location
-    url = _get_url(usage_key)
-    name = child.display_name
-    due_date = _make_timestamp(due_dates[usage_key.block_id])
-
-    return {
-        'url': url,
-        'name': name,
-        'due_date': due_date,
-    }
-
-
-def _get_url(usage_key):
-    """
-    Return URL for problem identified by `usage_key`.
-    """
-    (
-        course_key, chapter, section, vertical_unused,
-        position, final_target_id_unused
-    ) = path_to_location(modulestore(), usage_key)
-
-    return reverse(
-        'courseware_position',
-        args=(unicode(course_key), chapter, section, navigation_index(position))
-    )
-
-
-def _make_timestamp(date_string):
-    """
-    Turn `date_string` into a Unix timestamp and return it.
-    """
-    return calendar.timegm(parser.parse(date_string).timetuple())

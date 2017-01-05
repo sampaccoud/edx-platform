@@ -1,0 +1,172 @@
+"""
+Tests for utils of adaptive_learning app.
+"""
+import calendar
+from datetime import datetime
+from dateutil import parser
+import random
+
+from django.test import TestCase
+from mock import Mock, patch
+
+from adaptive_learning.utils import get_pending_reviews, make_revisions
+
+
+class AdaptiveLearningUtilsTest(TestCase):
+    """
+    Tests for utils of adaptive_learning app.
+    """
+
+    def _make_raw_pending_reviews(self):
+        """
+        Generate list of pending reviews that matches format of list
+        returned by AdaptiveLibraryContentModule.fetch_pending_reviews.
+        """
+        return [
+            {
+                'knowledge_node_uid': 'knowledge-node-{n}'.format(n=n),
+                'review_question_uid': 'review-question-{n}'.format(n=n),
+                'next_review_at': self._make_due_date()
+            } for n in range(5)
+        ]
+
+    def _make_pending_reviews(self):
+        """
+        Generate list of pending reviews that matches format of list
+        returned by `get_pending_reviews` function.
+        """
+        raw_pending_reviews = self._make_raw_pending_reviews()
+        return {
+            raw_pending_review['review_question_uid']: raw_pending_review['next_review_at']
+            for raw_pending_review in raw_pending_reviews
+        }
+
+    def _make_due_date(self):
+        """
+        Return string that represents random date between beginning of Unix time and right now.
+        """
+        today = self._make_timestamp(datetime.today())
+        random_timestamp = random.randint(0, today)
+        random_date = datetime.utcfromtimestamp(random_timestamp)
+        return random_date.strftime('%Y-%m-%dT%H:%M:%S')
+
+    @staticmethod
+    def _make_timestamp(date):
+        """
+        Turn `date` into a Unix timestamp and return it.
+        """
+        if isinstance(date, str):
+            date = parser.parse(date)
+        return calendar.timegm(date.timetuple())
+
+    @staticmethod
+    def _make_mock_modulestore(adaptive_content_blocks):
+        """
+        Return mock modulestore whose `get_items` method returns `adaptive_content_blocks`.
+        """
+        mock_modulestore = Mock(autospec=True)
+        mock_modulestore.get_items.return_value = adaptive_content_blocks
+        return mock_modulestore
+
+    def _make_mock_blocks(self, *pending_reviews):
+        """
+        Return list of mock adaptive content blocks for testing.
+
+        List contains one adaptive content block per pending review in `pending_reviews`.
+
+        Each adaptive content block is set up to return a list containing a child
+        whose `block_id` matches the 'review_question_uid' of a pending review
+        when `get_children` is called on it.
+        """
+        adaptive_content_blocks = []
+        for block_id, dummy in pending_reviews:
+            adaptive_content_block = Mock()
+            relevant_child = self._make_mock_child(block_id)
+            adaptive_content_block.get_children.return_value = [relevant_child]
+            adaptive_content_blocks.append(adaptive_content_block)
+        return adaptive_content_blocks
+
+    @staticmethod
+    def _make_mock_child(block_id):
+        """
+        Return mock child with `block_id` and `display_name` that includes `block_id`.
+        """
+        child = Mock()
+        child.location.block_id = block_id
+        child.display_name = 'child-{}'.format(block_id)
+        return child
+
+    @staticmethod
+    def _make_mock_course(course_key):
+        """
+        Return mock course with `course_key`.
+        """
+        course = Mock()
+        course.location.course_key = course_key
+        return course
+
+    @staticmethod
+    def _make_mock_paths():
+        """
+        Return list of mock paths to use as return values for `path_to_location`.
+        """
+        return [
+            ('dummy-course-key', 'dummy-chapter', 'dummy-section', 'dummy-vertical', 'dummy-position', 'dummy-id')
+            for n in range(5)
+        ]
+
+    @staticmethod
+    def _make_mock_urls():
+        """
+        Return list of mock URLs to use as return values for `reverse`.
+        """
+        return [
+            'url-{n}'.format(n=n) for n in range(5)
+        ]
+
+    @patch('adaptive_learning.utils.AdaptiveLibraryContentModule')
+    def test_get_pending_reviews(self, mock_module):
+        """
+        Test that `get_pending_reviews` calls appropriate API for obtaining raw list of pending reviews,
+        and returns the data in a new format optimized for further processing.
+        """
+        raw_pending_reviews = self._make_raw_pending_reviews()
+        mock_module.fetch_pending_reviews.return_value = raw_pending_reviews
+        mock_course = Mock()
+        user_id = 23
+        pending_reviews = get_pending_reviews(mock_course, user_id)
+        mock_module.fetch_pending_reviews.assert_called_once_with(mock_course, user_id)
+        self.assertEqual(len(pending_reviews.items()), len(raw_pending_reviews))
+        for raw_pending_review in raw_pending_reviews:
+            block_id = raw_pending_review['review_question_uid']
+            due_date = raw_pending_review['next_review_at']
+            self.assertIn(block_id, pending_reviews)
+            self.assertEqual(pending_reviews[block_id], due_date)
+
+    @patch('adaptive_learning.utils.modulestore')
+    @patch('adaptive_learning.utils.path_to_location')
+    @patch('adaptive_learning.utils.navigation_index')
+    @patch('adaptive_learning.utils.reverse')
+    def test_make_revisions(self, mock_reverse, mock_navigation_index, mock_path_to_location, mock_modulestore):
+        """
+        Test that `make_revisions` returns expected result.
+        """
+        mock_path_to_location.side_effect = self._make_mock_paths()
+        mock_reverse.side_effect = self._make_mock_urls()
+
+        course = self._make_mock_course('dummy-key')
+        pending_reviews = self._make_pending_reviews()
+
+        adaptive_content_blocks = self._make_mock_blocks(*pending_reviews.items())
+        mock_modulestore.return_value = self._make_mock_modulestore(adaptive_content_blocks)
+
+        expected_revisions = [
+            {
+                'url': 'url-{n}'.format(n=n),
+                'name': 'child-{}'.format(pending_reviews.items()[n][0]),
+                'due_date': self._make_timestamp(pending_reviews.items()[n][1]),
+            } for n in range(5)
+        ]
+
+        revisions = make_revisions(course, pending_reviews)
+        self.assertEqual(revisions, expected_revisions)
