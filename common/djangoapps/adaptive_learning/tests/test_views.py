@@ -2,20 +2,17 @@
 Tests for views of adaptive_learning app.
 """
 
-import calendar
-from datetime import datetime
-from dateutil import parser
 import json
-import random
 
 from django.core.urlresolvers import reverse
 from django.test import TestCase
 from mock import Mock, patch
 
+from adaptive_learning.tests.base import AdaptiveLearningTestMixin
 from student.tests.factories import UserFactory
 
 
-class AdaptiveLearningViewsTest(TestCase):
+class AdaptiveLearningViewsTest(TestCase, AdaptiveLearningTestMixin):
     """
     Tests for views of adaptive_learning app.
     """
@@ -34,36 +31,9 @@ class AdaptiveLearningViewsTest(TestCase):
             {
                 'url': 'url-{n}'.format(n=n),
                 'name': 'name-{n}'.format(n=n),
-                'due_date': self._make_timestamp(self._make_due_date()),
+                'due_date': self.make_timestamp(self.make_due_date()),
             } for n in range(5)
         ]
-
-    def _make_pending_reviews(self):
-        """
-        Generate list of pending reviews for testing.
-        """
-        return {
-            'review-question-{n}'.format(n=n): self._make_due_date()
-            for n in range(5)
-        }
-
-    def _make_due_date(self):
-        """
-        Return string that represents random date between beginning of Unix time and right now.
-        """
-        today = self._make_timestamp(datetime.today())
-        random_timestamp = random.randint(0, today)
-        random_date = datetime.utcfromtimestamp(random_timestamp)
-        return random_date.strftime('%Y-%m-%dT%H:%M:%S')
-
-    @staticmethod
-    def _make_timestamp(date):
-        """
-        Turn `date` into a Unix timestamp and return it.
-        """
-        if isinstance(date, str):
-            date = parser.parse(date)
-        return calendar.timegm(date.timetuple())
 
     @staticmethod
     def _make_mock_modulestore(courses):
@@ -127,7 +97,7 @@ class AdaptiveLearningViewsTest(TestCase):
         mock_modulestore.return_value = self._make_mock_modulestore([regular_course, adaptive_learning_course])
         with patch('adaptive_learning.views.get_pending_reviews') as patched_get_pending_reviews, \
                 patch('adaptive_learning.views.make_revisions') as patched_make_revisions:
-            pending_reviews = self._make_pending_reviews()
+            pending_reviews = self.make_pending_reviews()
             revisions = self._make_revisions()
             patched_get_pending_reviews.return_value = pending_reviews
             patched_make_revisions.return_value = revisions

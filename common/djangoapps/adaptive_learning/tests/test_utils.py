@@ -1,63 +1,18 @@
 """
 Tests for utils of adaptive_learning app.
 """
-import calendar
-from datetime import datetime
-from dateutil import parser
-import random
 
 from django.test import TestCase
 from mock import Mock, patch
 
+from adaptive_learning.tests.base import AdaptiveLearningTestMixin
 from adaptive_learning.utils import get_pending_reviews, make_revisions
 
 
-class AdaptiveLearningUtilsTest(TestCase):
+class AdaptiveLearningUtilsTest(TestCase, AdaptiveLearningTestMixin):
     """
     Tests for utils of adaptive_learning app.
     """
-
-    def _make_raw_pending_reviews(self):
-        """
-        Generate list of pending reviews that matches format of list
-        returned by AdaptiveLibraryContentModule.fetch_pending_reviews.
-        """
-        return [
-            {
-                'knowledge_node_uid': 'knowledge-node-{n}'.format(n=n),
-                'review_question_uid': 'review-question-{n}'.format(n=n),
-                'next_review_at': self._make_due_date()
-            } for n in range(5)
-        ]
-
-    def _make_pending_reviews(self):
-        """
-        Generate list of pending reviews that matches format of list
-        returned by `get_pending_reviews` function.
-        """
-        raw_pending_reviews = self._make_raw_pending_reviews()
-        return {
-            raw_pending_review['review_question_uid']: raw_pending_review['next_review_at']
-            for raw_pending_review in raw_pending_reviews
-        }
-
-    def _make_due_date(self):
-        """
-        Return string that represents random date between beginning of Unix time and right now.
-        """
-        today = self._make_timestamp(datetime.today())
-        random_timestamp = random.randint(0, today)
-        random_date = datetime.utcfromtimestamp(random_timestamp)
-        return random_date.strftime('%Y-%m-%dT%H:%M:%S')
-
-    @staticmethod
-    def _make_timestamp(date):
-        """
-        Turn `date` into a Unix timestamp and return it.
-        """
-        if isinstance(date, str):
-            date = parser.parse(date)
-        return calendar.timegm(date.timetuple())
 
     @staticmethod
     def _make_mock_modulestore(adaptive_content_blocks):
@@ -130,7 +85,7 @@ class AdaptiveLearningUtilsTest(TestCase):
         Test that `get_pending_reviews` calls appropriate API for obtaining raw list of pending reviews,
         and returns the data in a new format optimized for further processing.
         """
-        raw_pending_reviews = self._make_raw_pending_reviews()
+        raw_pending_reviews = self.make_raw_pending_reviews()
         mock_module.fetch_pending_reviews.return_value = raw_pending_reviews
         mock_course = Mock()
         user_id = 23
@@ -155,7 +110,7 @@ class AdaptiveLearningUtilsTest(TestCase):
         mock_reverse.side_effect = self._make_mock_urls()
 
         course = self._make_mock_course('dummy-key')
-        pending_reviews = self._make_pending_reviews()
+        pending_reviews = self.make_pending_reviews()
 
         adaptive_content_blocks = self._make_mock_blocks(*pending_reviews.items())
         mock_modulestore.return_value = self._make_mock_modulestore(adaptive_content_blocks)
@@ -164,7 +119,7 @@ class AdaptiveLearningUtilsTest(TestCase):
             {
                 'url': 'url-{n}'.format(n=n),
                 'name': 'child-{}'.format(pending_reviews.items()[n][0]),
-                'due_date': self._make_timestamp(pending_reviews.items()[n][1]),
+                'due_date': self.make_timestamp(pending_reviews.items()[n][1]),
             } for n in range(5)
         ]
 
