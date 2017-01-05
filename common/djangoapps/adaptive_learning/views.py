@@ -24,8 +24,8 @@ def revisions(request):
     """
     user = request.user
 
-    revisions = _get_pending_revisions(user)
-    json_revisions = json.dumps(revisions)
+    pending_revisions = _get_pending_revisions(user)
+    json_revisions = json.dumps(pending_revisions)
 
     return HttpResponse(json_revisions)
 
@@ -55,8 +55,8 @@ def _get_pending_revisions(user):
 
             # Create revision for each pending review, and add it to the list of pending revisions
             if pending_reviews:
-                revisions = _make_revisions(course, pending_reviews)
-                pending_revisions.extend(revisions)
+                course_revisions = _make_revisions(course, pending_reviews)
+                pending_revisions.extend(course_revisions)
 
     return pending_revisions
 

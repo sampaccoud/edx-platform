@@ -2,7 +2,7 @@
 
 from __future__ import absolute_import
 
-from functools import reduce
+from functools import reduce  # pylint: disable=redefined-builtin
 import logging
 import operator
 

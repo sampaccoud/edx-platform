@@ -45,7 +45,7 @@ class AdaptiveLearningConfiguration(object):
             return False
 
         is_usable = True
-        for key, val in configuration.items():
+        for val in configuration.values():
             if isinstance(val, str):
                 is_usable &= bool(val)  # Empty strings are not considered meaningful
             elif isinstance(val, int):
