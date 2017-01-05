@@ -38,7 +38,12 @@ class AdaptiveLearningConfiguration(object):
         """
         Return True if `configuration` has meaningful values for all relevant settings,
         else False.
+
+        If `configuration` is empty, return False as well.
         """
+        if not configuration:
+            return False
+
         is_usable = True
         for key, val in configuration.items():
             if isinstance(val, str):
