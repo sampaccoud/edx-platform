@@ -597,8 +597,7 @@ class AdaptiveLibraryContentModule(AdaptiveLibraryContentFields, LibraryContentM
         using adaptive learning configuration from `course`.
         """
         api_client = AdaptiveLearningAPIClient(course)
-        pending_reviews = api_client.get_pending_reviews(user_id)
-        return pending_reviews
+        return api_client.get_pending_reviews(user_id)
 
 
 @XBlock.wants('user')
