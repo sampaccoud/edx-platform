@@ -67,7 +67,7 @@ class AdaptiveLearningUtilsTest(TestCase, AdaptiveLearningTestMixin):
         """
         return [
             ('dummy-course-key', 'dummy-chapter', 'dummy-section', 'dummy-vertical', 'dummy-position', 'dummy-id')
-            for n in range(5)
+            for dummy in range(5)
         ]
 
     @staticmethod
@@ -102,7 +102,7 @@ class AdaptiveLearningUtilsTest(TestCase, AdaptiveLearningTestMixin):
     @patch('adaptive_learning.utils.path_to_location')
     @patch('adaptive_learning.utils.navigation_index')
     @patch('adaptive_learning.utils.reverse')
-    def test_make_revisions(self, mock_reverse, mock_navigation_index, mock_path_to_location, mock_modulestore):
+    def test_make_revisions(self, mock_reverse, mock_navigation_index, mock_path_to_location, mock_modulestore):  # pylint: disable=unused-argument
         """
         Test that `make_revisions` returns expected result.
         """

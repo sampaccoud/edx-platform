@@ -93,7 +93,7 @@ class AdaptiveLearningViewsTest(TestCase, AdaptiveLearningTestMixin):
         When collecting revisions for display, the view should ignore courses
         that are not properly configured for communicating with external adaptive learning service.
         """
-        regular_course, adaptive_learning_course = self._make_mock_courses(False, True)
+        regular_course, adaptive_learning_course = self._make_mock_courses(False, True)  # pylint: disable=unbalanced-tuple-unpacking
         mock_modulestore.return_value = self._make_mock_modulestore([regular_course, adaptive_learning_course])
         with patch('adaptive_learning.views.get_pending_reviews') as patched_get_pending_reviews, \
                 patch('adaptive_learning.views.make_revisions') as patched_make_revisions:
@@ -107,7 +107,7 @@ class AdaptiveLearningViewsTest(TestCase, AdaptiveLearningTestMixin):
             # So:
             # - Function for obtaining list of pending reviews should have been called once,
             #   with course that has meaningful configuration, and appropriate `user_id`.
-            patched_get_pending_reviews.assert_called_once_with(adaptive_learning_course, self.user.id)
+            patched_get_pending_reviews.assert_called_once_with(adaptive_learning_course, self.user.id)  # pylint: disable=no-member
             # - Functions for turning list of pending reviews into list of revisions to display
             #   should have been called once, with course that has meaningful configuration,
             #   and list of `pending_reviews`.
@@ -126,6 +126,6 @@ class AdaptiveLearningViewsTest(TestCase, AdaptiveLearningTestMixin):
                 patch('adaptive_learning.views.make_revisions') as patched_make_revisions:
             patched_get_pending_reviews.return_value = {}
             response = self.client.get(reverse('revisions'))
-            patched_get_pending_reviews.assert_called_once_with(courses[0], self.user.id)
+            patched_get_pending_reviews.assert_called_once_with(courses[0], self.user.id)  # pylint: disable=no-member
             patched_make_revisions.assert_not_called()
             self.assertEqual(response.content, json.dumps([]))
