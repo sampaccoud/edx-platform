@@ -44,13 +44,13 @@ class AdaptiveLearningConfiguration(object):
         if not configuration:
             return False
 
-        is_usable = True
+        is_meaningful = True
         for val in configuration.values():
             if isinstance(val, str):
-                is_usable &= bool(val)  # Empty strings are not considered meaningful
+                is_meaningful &= bool(val)  # Empty strings are not considered meaningful
             elif isinstance(val, int):
-                is_usable &= (val >= 0)  # Negative ints are not considered meaningful
-        return is_usable
+                is_meaningful &= (val >= 0)  # Negative ints are not considered meaningful
+        return is_meaningful
 
 
 class AdaptiveLearningAPIMixin(object):
