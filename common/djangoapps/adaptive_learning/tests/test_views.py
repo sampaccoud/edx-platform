@@ -12,7 +12,7 @@ from adaptive_learning.tests.base import AdaptiveLearningTestMixin
 from student.tests.factories import UserFactory
 
 
-class AdaptiveLearningViewsTest(TestCase, AdaptiveLearningTestMixin):
+class AdaptiveLearningViewsTest(AdaptiveLearningTestMixin, TestCase):
     """
     Tests for views of adaptive_learning app.
     """
@@ -25,7 +25,7 @@ class AdaptiveLearningViewsTest(TestCase, AdaptiveLearningTestMixin):
 
     def _make_revisions(self):
         """
-        Generate list of revisions for testing.
+        Return list of revisions for testing.
         """
         return [
             {
@@ -46,14 +46,12 @@ class AdaptiveLearningViewsTest(TestCase, AdaptiveLearningTestMixin):
 
     def _make_mock_courses(self, *meaningfulness):
         """
-        Return list of mock courses with adaptive learning configuration that is (not) meaningful.
+        Generate mock courses with adaptive learning configuration that is (not) meaningful.
         """
-        courses = []
         for meaningful in meaningfulness:
             course = Mock()
             course.adaptive_learning_configuration = self._make_adaptive_learning_configuration(meaningful)
-            courses.append(course)
-        return courses
+            yield course
 
     @staticmethod
     def _make_adaptive_learning_configuration(meaningful):
@@ -93,14 +91,14 @@ class AdaptiveLearningViewsTest(TestCase, AdaptiveLearningTestMixin):
         When collecting revisions for display, the view should ignore courses
         that are not properly configured for communicating with external adaptive learning service.
         """
-        regular_course, adaptive_learning_course = self._make_mock_courses(False, True)  # pylint: disable=unbalanced-tuple-unpacking
+        regular_course, adaptive_learning_course = self._make_mock_courses(False, True)
         mock_modulestore.return_value = self._make_mock_modulestore([regular_course, adaptive_learning_course])
         with patch('adaptive_learning.views.get_pending_reviews') as patched_get_pending_reviews, \
-                patch('adaptive_learning.views.make_revisions') as patched_make_revisions:
+                patch('adaptive_learning.views.get_revisions') as patched_get_revisions:
             pending_reviews = self.make_pending_reviews()
             revisions = self._make_revisions()
             patched_get_pending_reviews.return_value = pending_reviews
-            patched_make_revisions.return_value = revisions
+            patched_get_revisions.return_value = revisions
             response = self.client.get(reverse('revisions'))
             # Modulestore contains two courses, one course with a meaningful configuration,
             # and one course without a meaningful configuration.
@@ -108,11 +106,11 @@ class AdaptiveLearningViewsTest(TestCase, AdaptiveLearningTestMixin):
             # - Function for obtaining list of pending reviews should have been called once,
             #   with course that has meaningful configuration, and appropriate `user_id`.
             patched_get_pending_reviews.assert_called_once_with(adaptive_learning_course, self.user.id)  # pylint: disable=no-member
-            # - Functions for turning list of pending reviews into list of revisions to display
+            # - Function for turning list of pending reviews into list of revisions to display
             #   should have been called once, with course that has meaningful configuration,
             #   and list of `pending_reviews`.
-            patched_make_revisions.assert_called_once_with(adaptive_learning_course, pending_reviews)
-            # - Content of response should be equal to return value of patched `make_revisions` function.
+            patched_get_revisions.assert_called_once_with(adaptive_learning_course, pending_reviews)
+            # - Content of response should be equal to return value of patched `get_revisions` function.
             self.assertEqual(response.content, json.dumps(revisions))
 
     @patch('adaptive_learning.views.modulestore')
@@ -120,12 +118,12 @@ class AdaptiveLearningViewsTest(TestCase, AdaptiveLearningTestMixin):
         """
         Test that 'revisions' view behaves correctly when there are no pending reviews for a course.
         """
-        courses = self._make_mock_courses(True)
+        courses = list(self._make_mock_courses(True))
         mock_modulestore.return_value = self._make_mock_modulestore(courses)
         with patch('adaptive_learning.views.get_pending_reviews') as patched_get_pending_reviews, \
-                patch('adaptive_learning.views.make_revisions') as patched_make_revisions:
+                patch('adaptive_learning.views.get_revisions') as patched_get_revisions:
             patched_get_pending_reviews.return_value = {}
             response = self.client.get(reverse('revisions'))
             patched_get_pending_reviews.assert_called_once_with(courses[0], self.user.id)  # pylint: disable=no-member
-            patched_make_revisions.assert_not_called()
+            patched_get_revisions.assert_not_called()
             self.assertEqual(response.content, json.dumps([]))

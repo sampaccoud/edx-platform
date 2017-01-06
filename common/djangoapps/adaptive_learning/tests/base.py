@@ -15,7 +15,7 @@ class AdaptiveLearningTestMixin(object):
 
     def make_raw_pending_reviews(self):
         """
-        Generate list of pending reviews that matches format of list
+        Return list of pending reviews that matches format of list
         returned by AdaptiveLibraryContentModule.fetch_pending_reviews.
         """
         return [
@@ -28,7 +28,7 @@ class AdaptiveLearningTestMixin(object):
 
     def make_pending_reviews(self):
         """
-        Generate list of pending reviews that matches format of list
+        Return dict of pending reviews that matches format of dict
         returned by `get_pending_reviews` function.
         """
         raw_pending_reviews = self.make_raw_pending_reviews()

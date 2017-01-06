@@ -6,10 +6,10 @@ from django.test import TestCase
 from mock import Mock, patch
 
 from adaptive_learning.tests.base import AdaptiveLearningTestMixin
-from adaptive_learning.utils import get_pending_reviews, make_revisions
+from adaptive_learning.utils import get_pending_reviews, get_revisions
 
 
-class AdaptiveLearningUtilsTest(TestCase, AdaptiveLearningTestMixin):
+class AdaptiveLearningUtilsTest(AdaptiveLearningTestMixin, TestCase):
     """
     Tests for utils of adaptive_learning app.
     """
@@ -61,19 +61,9 @@ class AdaptiveLearningUtilsTest(TestCase, AdaptiveLearningTestMixin):
         return course
 
     @staticmethod
-    def _make_mock_paths():
-        """
-        Return list of mock paths to use as return values for `path_to_location`.
-        """
-        return [
-            ('dummy-course-key', 'dummy-chapter', 'dummy-section', 'dummy-vertical', 'dummy-position', 'dummy-id')
-            for dummy in range(5)
-        ]
-
-    @staticmethod
     def _make_mock_urls():
         """
-        Return list of mock URLs to use as return values for `reverse`.
+        Return list of mock URLs to use as return values for `get_redirect_url`.
         """
         return [
             'url-{n}'.format(n=n) for n in range(5)
@@ -99,15 +89,12 @@ class AdaptiveLearningUtilsTest(TestCase, AdaptiveLearningTestMixin):
             self.assertEqual(pending_reviews[block_id], due_date)
 
     @patch('adaptive_learning.utils.modulestore')
-    @patch('adaptive_learning.utils.path_to_location')
-    @patch('adaptive_learning.utils.navigation_index')
-    @patch('adaptive_learning.utils.reverse')
-    def test_make_revisions(self, mock_reverse, mock_navigation_index, mock_path_to_location, mock_modulestore):  # pylint: disable=unused-argument
+    @patch('adaptive_learning.utils.get_redirect_url')
+    def test_get_revisions(self, mock_get_redirect_url, mock_modulestore):
         """
-        Test that `make_revisions` returns expected result.
+        Test that `get_revisions` returns expected result.
         """
-        mock_path_to_location.side_effect = self._make_mock_paths()
-        mock_reverse.side_effect = self._make_mock_urls()
+        mock_get_redirect_url.side_effect = self._make_mock_urls()
 
         course = self._make_mock_course('dummy-key')
         pending_reviews = self.make_pending_reviews()
@@ -123,5 +110,5 @@ class AdaptiveLearningUtilsTest(TestCase, AdaptiveLearningTestMixin):
             } for n in range(5)
         ]
 
-        revisions = make_revisions(course, pending_reviews)
+        revisions = get_revisions(course, pending_reviews)
         self.assertEqual(revisions, expected_revisions)

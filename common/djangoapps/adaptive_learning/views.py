@@ -10,7 +10,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from xmodule.modulestore.django import modulestore
 from xmodule.util.adaptive_learning import AdaptiveLearningConfiguration
 
-from adaptive_learning.utils import get_pending_reviews, make_revisions
+from adaptive_learning.utils import get_pending_reviews, get_revisions
 
 
 @login_required
@@ -34,7 +34,7 @@ def get_pending_revisions(user):
     """
     # Get all courses:
     # Configuration for communicating with external service that provides adaptive learning features
-    # is course-specific, so we need to collect pending revisions for one course at a time.
+    # is course-specific, so we need to collect pending revisions one course at a time.
     courses = modulestore().get_courses()
 
     # Initialize list of pending revisions
@@ -52,7 +52,7 @@ def get_pending_revisions(user):
 
             # Create revision for each pending review, and add it to the list of pending revisions
             if pending_reviews:
-                course_revisions = make_revisions(course, pending_reviews)
+                course_revisions = get_revisions(course, pending_reviews)
                 pending_revisions.extend(course_revisions)
 
     return pending_revisions

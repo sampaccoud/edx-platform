@@ -5,11 +5,9 @@ Utils for adaptive_learning app.
 import calendar
 from dateutil import parser
 
-from django.core.urlresolvers import reverse
-
+from lms.djangoapps.courseware.url_helpers import get_redirect_url
 from xmodule.modulestore.django import modulestore
 from xmodule.library_content_module import AdaptiveLibraryContentModule
-from xmodule.modulestore.search import path_to_location, navigation_index
 
 
 def get_pending_reviews(course, user_id):
@@ -37,7 +35,7 @@ def get_pending_reviews(course, user_id):
     }
 
 
-def make_revisions(course, pending_reviews):
+def get_revisions(course, pending_reviews):
     """
     Return list of revisions for `pending_reviews`.
 
@@ -62,7 +60,7 @@ def make_revisions(course, pending_reviews):
     for adaptive_content_block in adaptive_content_blocks:
         relevant_children = adaptive_content_block.get_children(usage_key_filter=usage_key_filter)
         for child in relevant_children:
-            revision = _make_revision(child, pending_reviews)
+            revision = _get_revision(child, pending_reviews)
             revisions.append(revision)
     return revisions
 
@@ -75,12 +73,12 @@ def _get_adaptive_content_blocks(course):
     return modulestore().get_items(course_key, qualifiers={'category': 'adaptive_library_content'})
 
 
-def _make_revision(child, due_dates):
+def _get_revision(child, due_dates):
     """
     Return revision containing URL, name, and due date for `child`.
     """
     usage_key = child.location
-    url = _get_url(usage_key)
+    url = get_redirect_url(usage_key.course_key, usage_key)
     name = child.display_name
     due_date = _make_timestamp(due_dates[usage_key.block_id])
 
@@ -89,21 +87,6 @@ def _make_revision(child, due_dates):
         'name': name,
         'due_date': due_date,
     }
-
-
-def _get_url(usage_key):
-    """
-    Return URL for problem identified by `usage_key`.
-    """
-    (
-        course_key, chapter, section, vertical_unused,
-        position, final_target_id_unused
-    ) = path_to_location(modulestore(), usage_key)
-
-    return reverse(
-        'courseware_position',
-        args=(unicode(course_key), chapter, section, navigation_index(position))
-    )
 
 
 def _make_timestamp(date_string):
