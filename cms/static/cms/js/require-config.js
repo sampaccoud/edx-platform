@@ -108,7 +108,8 @@
             ],
             // FUN-specific
             'videoplayer-fun': 'fun/js/videoplayer-fun',
-            'videojs-fun': 'fun/js/vendor/videojs/video-fun'
+            'videojs-fun': 'fun/js/vendor/videojs/video-fun',
+            'adways-player': '//dj5ag5n6bpdxo.cloudfront.net/libs/interactive/loader'
         },
         shim: {
             'gettext': {
