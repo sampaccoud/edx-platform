@@ -3,6 +3,7 @@ This file contains tasks that are designed to perform background operations on t
 running state of a course.
 
 """
+import operator
 import json
 import re
 from collections import OrderedDict
@@ -734,7 +735,7 @@ def upload_grades_csv(_xmodule_instance_args, _entry_id, course_id, _task_input,
             if not header:
                 header = [section['label'] for section in gradeset[u'section_breakdown']]
                 rows.append(
-                    ["id", "email", "username", "grade"] + header + cohorts_header +
+                    ["id", "username", 'name', "grade"] + header + cohorts_header +
                     group_configs_header + teams_header +
                     ['Enrollment Track', 'Verification Status'] + certificate_info_header
                 )
@@ -784,7 +785,7 @@ def upload_grades_csv(_xmodule_instance_args, _entry_id, course_id, _task_input,
             # still have 100% for the course.
             row_percents = [percents.get(label, 0.0) for label in header]
             rows.append(
-                [student.id, student.email, student.username, gradeset['percent']] +
+                [student.id, student.username, student.profile.name, gradeset['percent']] +
                 row_percents + cohorts_group_name + group_configs_group_names + team_name +
                 [enrollment_mode] + [verification_status] + certificate_info
             )
@@ -917,7 +918,7 @@ def upload_problem_grade_report(_xmodule_instance_args, _entry_id, course_id, _t
     # This struct encapsulates both the display names of each static item in the
     # header row as values as well as the django User field names of those items
     # as the keys.  It is structured in this way to keep the values related.
-    header_row = OrderedDict([('id', 'Student ID'), ('email', 'Email'), ('username', 'Username')])
+    header_row = OrderedDict([('id', 'Student ID'), ('username', 'Username'), ('profile.name', 'Name')])
 
     try:
         course_structure = CourseStructure.objects.get(course_id=course_id)
@@ -934,7 +935,7 @@ def upload_problem_grade_report(_xmodule_instance_args, _entry_id, course_id, _t
     current_step = {'step': 'Calculating Grades'}
 
     for student, gradeset, err_msg in iterate_grades_for(course_id, enrolled_students, keep_raw_scores=True):
-        student_fields = [getattr(student, field_name) for field_name in header_row]
+        student_fields = [operator.attrgetter(field_name)(student) for field_name in header_row]
         task_progress.attempted += 1
 
         if 'percent' not in gradeset or 'raw_scores' not in gradeset:
