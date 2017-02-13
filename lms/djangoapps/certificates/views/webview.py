@@ -45,6 +45,8 @@ from certificates.models import (
     CertificateHtmlViewConfiguration,
     CertificateSocialNetworks)
 
+from django.template.defaultfilters import date as _date
+
 log = logging.getLogger(__name__)
 
 
@@ -97,7 +99,7 @@ def _update_certificate_context(context, user_certificate, platform_name):
 
     # Translators:  The format of the date includes the full name of the month
     context['certificate_date_issued'] = _('{month} {day}, {year}').format(
-        month=user_certificate.modified_date.strftime("%B"),
+        month=_date(user_certificate.modified_date,"F"),
         day=user_certificate.modified_date.day,
         year=user_certificate.modified_date.year
     )
