@@ -345,8 +345,14 @@ def _cert_info(user, course_overview, cert_status, course_mode):  # pylint: disa
                     'cert_web_view_url': get_certificate_url(course_id=course_overview.id, uuid=cert_status['uuid'])
                 })
             else:
-                # don't show download certificate button if we don't have an active certificate for course
-                status_dict['show_download_url'] = False
+                if cert_status['download_url']:
+                    status_dict['download_url'] = cert_status['download_url']  # FUN : we still want to show the download
+                    # button whenever someone has had an "attestation" and no certificate (or in transition between
+                    # the two )
+                else:
+                    # don't show download certificate button if we don't have an active certificate for course
+                    status_dict['show_download_url'] = False
+
         elif 'download_url' not in cert_status:
             log.warning(
                 u"User %s has a downloadable cert for %s, but no download url",
