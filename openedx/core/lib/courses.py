@@ -21,10 +21,23 @@ def course_image_url(course):
             url += '/' + course.course_image
         else:
             url += '/images/course_image.jpg'
-    elif not course.course_image:
+        return url
         # if course_image is empty, use the default image url from settings
-        url = settings.STATIC_URL + settings.DEFAULT_COURSE_ABOUT_IMAGE_URL
-    else:
+
+    if course.course_image:
         loc = StaticContent.compute_location(course.id, course.course_image)
         url = StaticContent.serialize_asset_key_with_slash(loc)
+        return url
+    url = ""
+
+    try:
+        url = settings.STATIC_URL + settings.DEFAULT_COURSE_ABOUT_IMAGE_URL
+    except AttributeError as e:
+        # AttributeError: 'Settings' object has no attribute 'DEFAULT_COURSE_ABOUT_IMAGE_URL'
+	import logging
+        logger = logging.getLogger(__name__)
+	logger.exception("You should check your settings (%r)" % e)
+        pass
+
     return url
+
