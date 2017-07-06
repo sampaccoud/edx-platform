@@ -18,6 +18,7 @@ from badges.events.course_complete import get_completion_badge
 from badges.utils import badges_enabled
 from courseware.access import has_access
 from edxmako.shortcuts import render_to_response
+from edxmako.shortcuts import render_to_string
 from edxmako.template import Template
 from eventtracking import tracker
 from opaque_keys import InvalidKeyError
@@ -46,6 +47,8 @@ from certificates.models import (
     CertificateSocialNetworks)
 
 from django.template.defaultfilters import date as _date
+from mako.exceptions import TopLevelLookupException
+from certificates.utils import svg_converter
 
 log = logging.getLogger(__name__)
 
@@ -246,6 +249,8 @@ def _update_course_context(request, context, course, platform_name):
             partner_short_name=context['organization_short_name'],
             platform_name=platform_name)
 
+    context['accomplishment_course_id'] = course.id
+
 
 def _update_social_context(request, context, course, user, user_certificate, platform_name):
     """
@@ -417,8 +422,10 @@ def _render_certificate_template(request, context, course, user_certificate):
             )
             context = RequestContext(request, context)
             return HttpResponse(template.render(context))
-
-    return render_to_response("certificates/valid.html", context)
+    if 'ENABLE_SVG_CERTIFICATES' in settings.FEATURES and settings.FEATURES["ENABLE_SVG_CERTIFICATES"]:
+        return render_to_response("certificates/valid-with-image.html", context)
+    else:
+        return render_to_response("certificates/valid.html", context)
 
 
 def _update_configuration_context(context, configuration):
@@ -472,30 +479,20 @@ def _update_organization_context(context, course):
     context['accomplishment_copy_course_org'] = partner_short_name
     context['organization_logo'] = organization_logo
 
+class InvalidCertificateError(Exception):
+    """ Exception raised when we cannot build context due to error in some parameters
 
-def render_cert_by_uuid(request, certificate_uuid):
+        Attributes:
+            invalid_template_path : template to render the exception in
+            context: context built so far
+
     """
-    This public view generates an HTML representation of the specified certificate
-    """
-    try:
-        certificate = GeneratedCertificate.eligible_certificates.get(
-            verify_uuid=certificate_uuid,
-            status=CertificateStatuses.downloadable
-        )
-        return render_html_view(request, certificate.user.id, unicode(certificate.course_id))
-    except GeneratedCertificate.DoesNotExist:
-        raise Http404
+    def __init__(self, invalid_template_path, context):
+        self.invalid_template_path =  invalid_template_path
+        self.context               = context
 
 
-@handle_500(
-    template_path="certificates/server-error.html",
-    test_func=lambda request: request.GET.get('preview', None)
-)
-def render_html_view(request, user_id, course_id):
-    """
-    This public view generates an HTML representation of the specified user and course
-    If a certificate is not available, we display a "Sorry!" screen instead
-    """
+def _build_context_cert(request, user_id, course_id, invalid_template_path = 'certificates/invalid.html'):
     try:
         user_id = int(user_id)
     except ValueError:
@@ -507,7 +504,6 @@ def render_html_view(request, user_id, course_id):
     # Create the initial view context, bootstrapping with Django settings and passed-in values
     context = {}
     _update_context_with_basic_info(context, course_id, platform_name, configuration)
-    invalid_template_path = 'certificates/invalid.html'
 
     # Kick the user back to the "Invalid" screen if the feature is disabled
     if not has_html_certificates_enabled(course_id):
@@ -516,7 +512,7 @@ def render_html_view(request, user_id, course_id):
             course_id,
             user_id,
         )
-        return render_to_response(invalid_template_path, context)
+        raise InvalidCertificateError(invalid_template_path, context)
 
     # Load the course and user objects
     try:
@@ -531,7 +527,7 @@ def render_html_view(request, user_id, course_id):
             "%d. Specific error: %s"
         )
         log.info(error_str, course_id, user_id, str(exception))
-        return render_to_response(invalid_template_path, context)
+        raise InvalidCertificateError(invalid_template_path, context)
 
     # Load user's certificate
     user_certificate = _get_user_certificate(request, user, course_key, course, preview_mode)
@@ -541,7 +537,7 @@ def render_html_view(request, user_id, course_id):
             user_id,
             course_id,
         )
-        return render_to_response(invalid_template_path, context)
+        raise InvalidCertificateError(invalid_template_path, context)
 
     # Get the active certificate configuration for this course
     # If we do not have an active certificate, we'll need to send the user to the "Invalid" screen
@@ -553,7 +549,7 @@ def render_html_view(request, user_id, course_id):
             course_id,
             user_id,
         )
-        return render_to_response(invalid_template_path, context)
+        raise InvalidCertificateError(invalid_template_path, context)
 
     context['certificate_data'] = active_configuration
 
@@ -591,5 +587,160 @@ def render_html_view(request, user_id, course_id):
     # Track certificate view events
     _track_certificate_events(request, context, course, user, user_certificate)
 
-    # FINALLY, render appropriate certificate
-    return _render_certificate_template(request, context, course, user_certificate)
+    return course, user_certificate, context
+
+def _render_svg_view(request, user_id, course_id):
+
+    # In order to be able to work with a modifiable SVG file, we need
+    # to tweak it a bit before we render it:
+    # - Put the description within the field content so we can just put the right info in Inkscape for example
+    # - Remove the xml declaration so not to annoy the XML parser
+    #
+
+    if settings.FEATURES.get('CUSTOM_CERTIFICATE_TEMPLATES_ENABLED', False):
+        custom_template = get_certificate_template(course.id, user_certificate.mode)
+        if custom_template:
+            template = Template(
+                custom_template,
+                output_encoding='utf-8',
+                input_encoding='utf-8',
+                default_filters=['decode.utf8'],
+                encoding_errors='replace',
+            )
+            context = RequestContext(request, context)
+            return template.render(context)
+
+    course, user_certificate, context = _build_context_cert(request, user_id, course_id)
+
+    ## Hookup template search so we can do a bit of tweaking of the SVG model before hand
+    ## We will use the usual template lookup to get the relevant svg file and then process them and concatenate them
+    from edxmako import lookup_template
+    from edxmako.request_context import get_template_request_context
+    from certificates.utils import svg_filter_model
+    from openedx.core.djangoapps.theming.helpers import get_template_path
+    from django.template import Context
+
+    template_name = get_template_path("certificates/svg/svg-certificate.svg")
+    template_name_model = get_template_path("certificates/svg/_model.svg")
+
+    context_instance = Context()
+    # collapse context_instance to a single dictionary for mako
+    context_dictionary = {}
+    context_instance['settings'] = settings
+    context_instance['EDX_ROOT_URL'] = settings.EDX_ROOT_URL
+
+    # In various testing contexts, there might not be a current request context.
+    request_context = get_template_request_context(request)
+    if request_context:
+        for item in request_context:
+            context_dictionary.update(item)
+    for item in context_instance:
+        context_dictionary.update(item)
+    if context:
+        context_dictionary.update(context)
+
+    # "Fix" CSRF token by evaluating the lazy object
+    KEY_CSRF_TOKENS = ('csrf_token', 'csrf')
+    for key in KEY_CSRF_TOKENS:
+        if key in context_dictionary:
+            context_dictionary[key] = unicode(context_dictionary[key])
+
+    # fetch the source and render template
+    template = lookup_template('main', template_name)
+    template_model = lookup_template('main', template_name_model)
+
+    modelsvg = template_model.source
+    modelsvg = svg_filter_model(modelsvg)
+
+    fulltemplate = template.source + modelsvg
+
+    template = Template(text = fulltemplate,
+                        output_encoding='utf-8',
+                        input_encoding='utf-8',
+                        default_filters=['decode.utf8'],
+                        encoding_errors='replace' )
+
+    return template.render_unicode(**context_dictionary)
+
+def render_cert_by_uuid(request, certificate_uuid):
+    """
+    This public view generates an HTML representation of the specified certificate
+    """
+    try:
+        certificate = GeneratedCertificate.eligible_certificates.get(
+            verify_uuid=certificate_uuid,
+            status=CertificateStatuses.downloadable
+        )
+        return render_html_view(request, certificate.user.id, unicode(certificate.course_id))
+    except GeneratedCertificate.DoesNotExist:
+        raise Http404
+
+
+@handle_500(
+    template_path="certificates/server-error.html",
+    test_func=lambda request: request.GET.get('preview', None)
+)
+def render_html_view(request, user_id, course_id):
+    """
+    This public view generates an HTML representation of the specified user and course
+    If a certificate is not available, we display a "Sorry!" screen instead
+    """
+    try:
+        course, user_certificate, context = _build_context_cert(request, user_id, course_id)
+        # FINALLY, render appropriate certificate
+        return _render_certificate_template(request, context, course, user_certificate)
+    except InvalidCertificateError as e:
+        return render_to_response(e.invalid_template_path, e.context)
+
+
+
+@handle_500(
+    template_path="certificates/server-error.html",
+    test_func=lambda request: request.GET.get('preview', None)
+)
+def render_pdf_view(request, user_id, course_id):
+    """
+    This public view generates a PDF representation of the specified user and course
+    If a certificate is not available, we display an error page
+    """
+    try:
+        svg_path = _render_svg_view(request, user_id, course_id).encode('utf-8')
+        pdf = svg_converter(svg_path, content_type="application/pdf")
+        response = HttpResponse(pdf, content_type="application/pdf")
+        return response
+    except InvalidCertificateError as e:
+        return render_to_response(e.invalid_template_path, e.context)
+
+@handle_500(
+    template_path="certificates/server-error.html",
+    test_func=lambda request: request.GET.get('preview', None)
+)
+def render_svg_view(request, user_id, course_id):
+    """
+    This public view generates a SVG representation of the specified user and course
+    If a certificate is not available, we display an error page
+    """
+    try:
+        rendered_svg = _render_svg_view(request, user_id, course_id)
+        return HttpResponse(rendered_svg,content_type="image/svg+xml")
+    except InvalidCertificateError as e:
+        return render_to_response(e.invalid_template_path, e.context)
+
+@handle_500(
+    template_path="certificates/server-error.html",
+    test_func=lambda request: request.GET.get('preview', None)
+)
+def render_png_view(request, user_id, course_id):
+    """
+    This public view generates a PNG representation of the specified user and course
+    If a certificate is not available, we display an error page
+    """
+    try:
+        svg_path = _render_svg_view(request, user_id, course_id).encode('utf-8')
+        png = svg_converter(svg_path, content_type="image/png")
+        response = HttpResponse(png, content_type="image/png")
+        return response
+    except InvalidCertificateError as e:
+        return render_to_response(e.invalid_template_path, e.context)
+
+

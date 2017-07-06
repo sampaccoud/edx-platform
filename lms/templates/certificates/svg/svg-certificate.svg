@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
+<%! from django.utils.translation import ugettext as _ %>
+
+<%
+from certificates.utils import get_svg_base64
+%>
+<%
+    signatories = certificate_data.get('signatories', [])
+%>
+
+<%
+    def signatory_exists(signatories, indice):
+      return len(signatories) > indice
+%>

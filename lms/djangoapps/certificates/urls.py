@@ -30,4 +30,28 @@ urlpatterns = patterns(
     url(r'search', views.search_certificates, name="search"),
     url(r'regenerate', views.regenerate_certificate_for_user, name="regenerate_certificate_for_user"),
     url(r'generate', views.generate_certificate_for_user, name="generate_certificate_for_user"),
+
 )
+
+if 'ENABLE_SVG_CERTIFICATES' in settings.FEATURES and settings.FEATURES["ENABLE_SVG_CERTIFICATES"]:
+    # Certificates SVG view end point to render web certs by user and course
+    urlpatterns += (
+        url(
+            r'^svg/user/(?P<user_id>[^/]*)/course/{course_id}'.format(course_id=settings.COURSE_ID_PATTERN),
+            views.render_svg_view,
+            name='certificate_svg_view'
+        ),
+    # Certificates PDF view end point to render web certs by user and course
+        url(
+            r'^pdf/user/(?P<user_id>[^/]*)/course/{course_id}'.format(course_id=settings.COURSE_ID_PATTERN),
+            views.render_pdf_view,
+            name='certificate_pdf_view'
+        ),
+    # Certificates PNG view end point to render web certs by user and course
+        url(
+            r'^png/user/(?P<user_id>[^/]*)/course/{course_id}'.format(course_id=settings.COURSE_ID_PATTERN),
+            views.render_png_view,
+            name='certificate_png_view'
+        ),
+
+    )
