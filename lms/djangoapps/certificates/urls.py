@@ -30,4 +30,12 @@ urlpatterns = patterns(
     url(r'search', views.search_certificates, name="search"),
     url(r'regenerate', views.regenerate_certificate_for_user, name="regenerate_certificate_for_user"),
     url(r'generate', views.generate_certificate_for_user, name="generate_certificate_for_user"),
+
+    # Certificates PDF view end point to render web certs by user and course
+    url(
+        r'^pdf/user/(?P<user_id>[^/]*)/course/{course_id}'.format(course_id=settings.COURSE_ID_PATTERN),
+        views.render_pdf_view,
+        name='pdf_view'
+    ),
+
 )

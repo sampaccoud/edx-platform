@@ -47,6 +47,9 @@ from certificates.models import (
 
 from django.template.defaultfilters import date as _date
 
+import xhtml2pdf.default
+from xhtml2pdf import pisa
+
 log = logging.getLogger(__name__)
 
 
@@ -593,3 +596,32 @@ def render_html_view(request, user_id, course_id):
 
     # FINALLY, render appropriate certificate
     return _render_certificate_template(request, context, course, user_certificate)
+
+
+@handle_500(
+    template_path="certificates/server-error.html",
+    test_func=lambda request: request.GET.get('preview', None)
+)
+def render_pdf_view(request, user_id, course_id):
+    htmlresult = render_html_view(request, user_id, course_id)
+
+    encoding = 'utf-8'
+    src = BytesIO(htmlresult.content.encode(encoding))
+    dest = BytesIO()
+
+    pdf = pisa.pisaDocument(src, dest, encoding=encoding,
+                            link_callback=link_callback, **kwargs)
+    if pdf.err:
+        logger.error("Error rendering PDF document")
+        for entry in pdf.log:
+            if entry[0] == xhtml2pdf.default.PML_ERROR:
+                logger_x2p.error("line %s, msg: %s, fragment: %s", entry[1], entry[2], entry[3])
+        raise PDFRenderingError("Errors rendering PDF", content=content, log=pdf.log)
+
+    if pdf.warn:
+        for entry in pdf.log:
+            if entry[0] == xhtml2pdf.default.PML_WARNING:
+                log.warning('line %s, msg: %s, fragment: %s", entry[1], entry[2], entry[3])
+
+    response = HttpResponse(pdf, content_type="application/pdf")
+    return response
