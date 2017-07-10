@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!--
+<%! from django.utils.translation import ugettext as _ %>
+-->
+<%include file="_accomplishment-rendering.svg" />

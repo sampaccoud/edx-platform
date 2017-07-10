@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<!--
+<%! from django.utils.translation import ugettext as _ %>
+-->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   version="1.2"
+   width="210mm"
+   height="297mm"
+   id="svg2">
+  <defs
+     id="defs4" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="layer1">
+    <flowRoot
+       transform="translate(-94.285714,-125.71429)"
+       id="messageTitle"
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"><title
+         id="title3003">Message Title</title><flowRegion
+         id="flowRegion2987"><rect
+           width="711.42859"
+           height="222.85712"
+           x="100"
+           y="138.07648"
+           id="rect2989" /></flowRegion><flowPara
+         id="flowPara2991">${_("Cannot Find Certificate")}</flowPara></flowRoot>    <flowRoot
+       transform="translate(-62.857143,-62.857143)"
+       id="messageContent"
+       xml:space="preserve"
+       style="font-size:40px;font-style:normal;font-weight:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans"><title
+         id="title3001">${_("We cannot find a certificate with this URL or ID number. If you are trying to validate a certificate, make sure that the URL or ID number is correct. If you are sure that the URL or ID number is correct, contact support.")}</title><flowRegion
+         id="flowRegion2995"><rect
+           width="662.85724"
+           height="654.28577"
+           x="91.428574"
+           y="380.93362"
+           id="rect2997" /></flowRegion><flowPara
+         id="flowPara2999">Message</flowPara></flowRoot>  </g>
+</svg>

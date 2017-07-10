@@ -31,6 +31,12 @@ urlpatterns = patterns(
     url(r'regenerate', views.regenerate_certificate_for_user, name="regenerate_certificate_for_user"),
     url(r'generate', views.generate_certificate_for_user, name="generate_certificate_for_user"),
 
+    # Certificates SVG view end point to render web certs by user and course
+    url(
+        r'^svg/user/(?P<user_id>[^/]*)/course/{course_id}'.format(course_id=settings.COURSE_ID_PATTERN),
+        views.render_svg_view,
+        name='svg_view'
+    ),
     # Certificates PDF view end point to render web certs by user and course
     url(
         r'^pdf/user/(?P<user_id>[^/]*)/course/{course_id}'.format(course_id=settings.COURSE_ID_PATTERN),
