@@ -250,6 +250,8 @@ def _update_course_context(request, context, course, platform_name):
             partner_short_name=context['organization_short_name'],
             platform_name=platform_name)
 
+    context['accomplishment_course_id'] = course.id
+
 
 def _update_social_context(request, context, course, user, user_certificate, platform_name):
     """
@@ -421,8 +423,10 @@ def _render_certificate_template(request, context, course, user_certificate):
             )
             context = RequestContext(request, context)
             return HttpResponse(template.render(context))
-
-    return render_to_response("certificates/valid.html", context)
+    if 'ENABLE_SVG_CERTIFICATES' in settings.FEATURES and settings.FEATURES["ENABLE_SVG_CERTIFICATES"]:
+        return render_to_response("certificates/valid-with-image.html", context)
+    else:
+        return render_to_response("certificates/valid.html", context)
 
 
 def _update_configuration_context(context, configuration):
@@ -588,6 +592,12 @@ def _build_context_cert(request, user_id, course_id, invalid_template_path = 'ce
 
 def _render_svg_view(request, user_id, course_id):
 
+    # In order to be able to work with a modifiable SVG file, we need
+    # to tweak it a bit before we render it:
+    # - Put the description within the field content so we can just put the right info in Inkscape for example
+    # - Remove the xml declaration so not to annoy the XML parser
+    #
+
     if settings.FEATURES.get('CUSTOM_CERTIFICATE_TEMPLATES_ENABLED', False):
         custom_template = get_certificate_template(course.id, user_certificate.mode)
         if custom_template:
@@ -601,16 +611,13 @@ def _render_svg_view(request, user_id, course_id):
             context = RequestContext(request, context)
             return template.render(context)
 
-    try:
-        course, user_certificate, context = _build_context_cert(request, user_id, course_id, 'certificates/invalid.svg')
-        # FINALLY, render appropriate certificate
-        try:
-            return render_to_string("certificates/valid-" + user_certificate.mode + ".svg", context)
-        except TopLevelLookupException:
-            return render_to_string("certificates/valid.svg", context)
-    except InvalidCertificateError as e:
-        return render_to_string(e.invalid_template_path, e.context)
+    course, user_certificate, context = _build_context_cert(request, user_id, course_id)
 
+    ## Hookup template search so we can do a bit of tweaking of the SVG model before hand
+
+    # FINALLY, render appropriate certificate
+    result = render_to_string("certificates/svg/svg-certificate.svg", context)
+    return result
 
 def render_cert_by_uuid(request, certificate_uuid):
     """
@@ -664,3 +671,13 @@ def render_svg_view(request, user_id, course_id):
     rendered_svg = _render_svg_view(request,user_id,course_id)
     return HttpResponse(rendered_svg,
                         content_type="image/svg+xml")
+
+@handle_500(
+    template_path="certificates/server-error.html",
+    test_func=lambda request: request.GET.get('preview', None)
+)
+def render_png_view(request, user_id, course_id):
+    svg_path  = _render_svg_view(request,user_id,course_id).encode('utf-8')
+    png = cairosvg.surface.PNGSurface.convert(svg_path)
+    response = HttpResponse(png, content_type="image/png")
+    return response

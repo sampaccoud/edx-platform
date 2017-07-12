@@ -1,0 +1,69 @@
+<%inherit file="accomplishment-base.html" />
+<%!
+    from django.utils.translation import ugettext as _
+    from django.core.urlresolvers import reverse
+%>
+
+% if user.is_authenticated() and user.id == int(accomplishment_user_id):
+<%include file="_accomplishment-banner.html" />
+% endif
+<%include file="_accomplishment-introduction.html" />
+
+<%
+course_mode_class = course_mode if course_mode else ''
+%>
+
+<main class="accomplishment accomplishment-main">
+
+    <div class="wrapper-accomplishment-rendering">
+        <div class="accomplishment-rendering">
+            <span class="deco-corner deco-corner-tl"></span>
+            <span class="deco-corner deco-corner-tr"></span>
+            <span class="deco-corner deco-corner-bl"></span>
+            <span class="deco-corner deco-corner-br"></span>
+            <img src="${reverse('certificates:certificate_png_view', args=[accomplishment_user_id, accomplishment_course_id] )}" alt="${_("Certificate Image")}"/>
+        </div>
+    </div>
+    <div class="wrapper-accomplishment-pdf">
+        <div class="accomplishment-rendering">
+            <a href="${reverse('certificates:certificate_pdf_view', args=[accomplishment_user_id, accomplishment_course_id] )}" target="_blank">${_("Download PDF version of this Certificate")}</a>
+        </div>
+    </div>
+
+    <div class="wrapper-accomplishment-metadata">
+        <div class="accomplishment-metadata">
+            <h2 class="accomplishment-metadata-title hd-6">${accomplishment_copy_more_about | h}</h2>
+
+            <div class="wrapper-metadata">
+                <dl class="metadata accomplishment-recipient">
+                    <dt class="label sr-only">Awarded to:</dt>
+                    <dd class="value copy copy-meta">
+                        <span class="recipient-img">
+                            <img class="src" src="/static/certificates/images/demo-user-profile.png" alt="">
+                        </span>
+                        <div class="recipient-details">
+                            <h3 class="recipient-name">${accomplishment_copy_name | h}</h3>
+                            <p class="recipient-username">${accomplishment_copy_username} @ ${platform_name}</p>
+                        </div>
+                    </dd>
+                </dl>
+                <dl class="metadata accomplishment-id">
+                    <dt class="label copy copy-meta">${certificate_id_number_title}:</dt>
+                    <dd class="value copy copy-base">${certificate_id_number}</dd>
+                </dl>
+                <dl class="metadata accomplishment-date">
+                    <dt class="label copy copy-meta">${certificate_date_issued_title}</dt>
+                    <dd class="value copy copy-base">${certificate_date_issued}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+</main>
+
+<div class="wrapper-about">
+    <aside role="complementary" class="about" aria-label="About edX Certificates">
+        <%include file="_about-edx.html" />
+        <%include file="_about-accomplishments.html" />
+    </aside>
+</div>

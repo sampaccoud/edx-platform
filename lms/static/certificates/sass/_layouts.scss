@@ -180,6 +180,16 @@
         margin-bottom: spacing-vertical(small);
     }
 
+    .wrapper-accomplishment-pdf {
+        @extend %layout-wrapper;
+        margin-bottom: spacing-vertical(small);
+
+        .accomplishment-pdf {
+            @extend %layout;
+        }
+
+    }
+
     .accomplishment-rendering {
         @extend %layout;
         position: relative;
