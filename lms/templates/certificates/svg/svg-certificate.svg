@@ -1,9 +1,21 @@
-<%inherit file="_model.svg" />
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <%! from django.utils.translation import ugettext as _ %>
-<%block name="signatory" >
+<%! from certificates.utils import svg_filter %>
+
+<%def name="content()" filter="svg_filter">
+    <%include file="_model.svg" />
+</%def>
+
+${content()}
+
+<%def name="signatory()" filter="svg_filter">
+   <%include file="_signatory.svg" />
+</%def>
+
+<%block name="signatories" >
     %if certificate_data:
         %for signatory in certificate_data.get('signatories', []):
-            <%include file="_signatory.svg" />
+
         %endfor
     %endif
 </%block>
