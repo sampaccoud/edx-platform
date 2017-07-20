@@ -7,6 +7,11 @@ from openedx.core.djangoapps.site_configuration import helpers as configuration_
 from lxml import etree
 import re
 
+import cairosvg
+from tempfile import NamedTemporaryFile
+import os
+import subprocess
+
 log = logging.getLogger(__name__)
 
 def svg_filter(svgstringin):
@@ -74,19 +79,24 @@ def __get_xsl_tring():
 
     """
 
+def svg_converter(svgstringin, content_type="image/png"):
+    convertedvalstring = ''
+    convertedvalstring = __convert_via_inkscape(svgstringin, content_type)
+    #convertedvalstring = cairosvg.surface.PDFSurface.convert(svgstringin)
+    return convertedvalstring
 
-    # <xsl:template match="@*|node()">
-    #     <xsl:copy>
-    #         <xsl:choose>
-    #             <xsl:when test="./svg:desc">
-    #                 <xsl:apply-templates select="node()" mode='replacedesc'>
-    #                     <xsl:with-param name="nodedesc"><xsl:value-of select="//svg:desc/text()" /></xsl:with-param>
-    #                 </xsl:apply-templates>
-    #             </xsl:when>
-    #             <xsl:otherwise>
-    #                 <xsl:apply-templates select="@*|node()"/>
-    #         </xsl:otherwise>
-    #         </xsl:choose>
-    #     </xsl:copy>
-    # </xsl:template>
-    #    <xsl:value-of select=".//svg:desc/text()" />
+def __convert_via_inkscape(stringin, content_type="image/png"):
+    infile =  NamedTemporaryFile(delete=True)
+    outfile = NamedTemporaryFile(delete=True)
+    infile.write(stringin)
+    infile.flush()
+    exportarg = '--export-png='
+    if content_type == "image/png":
+        exportarg = '--export-png='
+    elif content_type == "application/pdf":
+        exportarg = '--export-pdf='
+    subprocess.call(['inkscape', '-z','--export-background=#FFFFFF','--file=' + infile.name, exportarg + outfile.name])
+    stringout = outfile.read()
+    infile.close()
+    outfile.close()
+    return stringout

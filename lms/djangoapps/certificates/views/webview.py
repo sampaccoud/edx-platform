@@ -47,9 +47,8 @@ from certificates.models import (
     CertificateSocialNetworks)
 
 from django.template.defaultfilters import date as _date
-
 from mako.exceptions import TopLevelLookupException
-import cairosvg
+from certificates.utils import svg_converter
 
 log = logging.getLogger(__name__)
 
@@ -657,7 +656,7 @@ def render_html_view(request, user_id, course_id):
 )
 def render_pdf_view(request, user_id, course_id):
     svg_path  = _render_svg_view(request,user_id,course_id).encode('utf-8')
-    pdf = cairosvg.surface.PDFSurface.convert(svg_path)
+    pdf = svg_converter(svg_path, content_type="application/pdf" )
     response = HttpResponse(pdf, content_type="application/pdf")
     return response
 
@@ -678,6 +677,6 @@ def render_svg_view(request, user_id, course_id):
 )
 def render_png_view(request, user_id, course_id):
     svg_path  = _render_svg_view(request,user_id,course_id).encode('utf-8')
-    png = cairosvg.surface.PNGSurface.convert(svg_path)
+    png = svg_converter(svg_path, content_type="image/png")
     response = HttpResponse(png, content_type="image/png")
     return response
