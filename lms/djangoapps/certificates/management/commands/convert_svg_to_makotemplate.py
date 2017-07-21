@@ -10,7 +10,7 @@ from django.core.management.base import BaseCommand, CommandError
 from optparse import make_option
 import codecs
 
-from certificates.utils import svg_filter
+from certificates.utils import svg_filter_model, svg_filter_signatory
 
 class Command(BaseCommand):
     """
@@ -35,6 +35,12 @@ class Command(BaseCommand):
                     default=None,
                     help='File to write to (if this parameter is not present, out file will be <filename>.out'),
 
+        make_option('-s', '--signatory',
+                    action="store_true",
+                    dest='signatory',
+                    default=False,
+                    help='True if we need to use the signatory XSLT'),
+
     )
 
     def handle(self, *args, **options):
@@ -46,7 +52,10 @@ class Command(BaseCommand):
 
         with codecs.open(in_file,'r','utf-8') as fin:
             fstring = fin.read()
-            svgout = svg_filter(fstring);
+            if not options['signatory']:
+                svgout = svg_filter_model(fstring);
+            else:
+                svgout = svg_filter_signatory(fstring);
             if not out_file:
                 print svgout
             else:

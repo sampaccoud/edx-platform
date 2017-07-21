@@ -655,28 +655,48 @@ def render_html_view(request, user_id, course_id):
     test_func=lambda request: request.GET.get('preview', None)
 )
 def render_pdf_view(request, user_id, course_id):
-    svg_path  = _render_svg_view(request,user_id,course_id).encode('utf-8')
-    pdf = svg_converter(svg_path, content_type="application/pdf" )
-    response = HttpResponse(pdf, content_type="application/pdf")
-    return response
-
-
+    """
+    This public view generates a PDF representation of the specified user and course
+    If a certificate is not available, we display an error page
+    """
+    try:
+        svg_path = _render_svg_view(request, user_id, course_id).encode('utf-8')
+        pdf = svg_converter(svg_path, content_type="application/pdf")
+        response = HttpResponse(pdf, content_type="application/pdf")
+        return response
+    except InvalidCertificateError as e:
+        return render_to_response(e.invalid_template_path, e.context)
 
 @handle_500(
     template_path="certificates/server-error.html",
     test_func=lambda request: request.GET.get('preview', None)
 )
 def render_svg_view(request, user_id, course_id):
-    rendered_svg = _render_svg_view(request,user_id,course_id)
-    return HttpResponse(rendered_svg,
-                        content_type="image/svg+xml")
+    """
+    This public view generates a SVG representation of the specified user and course
+    If a certificate is not available, we display an error page
+    """
+    try:
+        rendered_svg = _render_svg_view(request, user_id, course_id)
+        return HttpResponse(rendered_svg,content_type="image/svg+xml")
+    except InvalidCertificateError as e:
+        return render_to_response(e.invalid_template_path, e.context)
 
 @handle_500(
     template_path="certificates/server-error.html",
     test_func=lambda request: request.GET.get('preview', None)
 )
 def render_png_view(request, user_id, course_id):
-    svg_path  = _render_svg_view(request,user_id,course_id).encode('utf-8')
-    png = svg_converter(svg_path, content_type="image/png")
-    response = HttpResponse(png, content_type="image/png")
-    return response
+    """
+    This public view generates a PNG representation of the specified user and course
+    If a certificate is not available, we display an error page
+    """
+    try:
+        svg_path = _render_svg_view(request, user_id, course_id).encode('utf-8')
+        png = svg_converter(svg_path, content_type="image/png")
+        response = HttpResponse(png, content_type="image/png")
+        return response
+    except InvalidCertificateError as e:
+        return render_to_response(e.invalid_template_path, e.context)
+
+
