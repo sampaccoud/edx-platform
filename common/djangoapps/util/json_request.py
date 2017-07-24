@@ -1,3 +1,4 @@
+# coding: utf-8
 from functools import wraps
 import json
 import decimal
@@ -5,7 +6,7 @@ from django.core.serializers import serialize
 from django.core.serializers.json import DjangoJSONEncoder
 from django.db.models.query import QuerySet
 from django.http import HttpResponse, HttpResponseBadRequest
-
+from bson import json_util
 
 class EDXJSONEncoder(DjangoJSONEncoder):
     """
@@ -66,12 +67,21 @@ class JsonResponse(HttpResponse):
         elif isinstance(resp_obj, QuerySet):
             content = serialize('json', resp_obj)
         else:
-            content = json.dumps(resp_obj, cls=encoder, indent=2, ensure_ascii=False)
+            try:
+                # This is the right behaviour
+                # https://github.com/edx/edx-platform/pull/12301/commits/83a7ceaa6a0663bf8e7d9354760b93ed3d3c277d
+                content = json.dumps(resp_obj, cls=encoder)
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                content = json.dumps(resp_obj, cls=encoder, ensure_ascii=False)
+                logger.exception("checking exception passed JUL")
+                pass
+
         kwargs.setdefault("content_type", "application/json")
         if status:
             kwargs["status"] = status
         super(JsonResponse, self).__init__(content, *args, **kwargs)
-
 
 class JsonResponseBadRequest(HttpResponseBadRequest):
     """
@@ -83,11 +93,14 @@ class JsonResponseBadRequest(HttpResponseBadRequest):
         status: 400
         encoder: DjangoJSONEncoder
     """
-    def __init__(self, obj=None, status=400, encoder=DjangoJSONEncoder, *args, **kwargs):
+    def __init__(self, obj=None, status=400, encoder=DjangoJSONEncoder, *args,
+**kwargs):
         if obj in (None, ""):
             content = ""
         else:
-            content = json.dumps(obj, cls=encoder, indent=2, ensure_ascii=False)
+            content = json.dumps(obj, cls=encoder, indent=2,
+ensure_ascii=False)
         kwargs.setdefault("content_type", "application/json")
         kwargs["status"] = status
         super(JsonResponseBadRequest, self).__init__(content, *args, **kwargs)
+
