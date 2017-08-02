@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+
 <%! from django.utils.translation import ugettext as _ %>
-<%! from certificates.utils import svg_filter_model %>
 
-<%def name="content()" filter="svg_filter_model">
-    <%include file="_model.svg" />
-</%def>
+<%
+from certificates.utils import get_svg_base64
+%>
+<%
+    signatories = certificate_data.get('signatories', [])
+%>
 
-${content()}
-
-
-
+<%
+    def signatory_exists(signatories, indice):
+      return len(signatories) > indice
+%>

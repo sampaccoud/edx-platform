@@ -613,10 +613,54 @@ def _render_svg_view(request, user_id, course_id):
     course, user_certificate, context = _build_context_cert(request, user_id, course_id)
 
     ## Hookup template search so we can do a bit of tweaking of the SVG model before hand
+    ## We will use the usual template lookup to get the relevant svg file and then process them and concatenate them
+    from edxmako import lookup_template
+    from edxmako.request_context import get_template_request_context
+    from certificates.utils import svg_filter_model
+    from openedx.core.djangoapps.theming.helpers import get_template_path
+    from django.template import Context
 
-    # FINALLY, render appropriate certificate
-    result = render_to_string("certificates/svg/svg-certificate.svg", context)
-    return result
+    template_name = get_template_path("certificates/svg/svg-certificate.svg")
+    template_name_model = get_template_path("certificates/svg/_model.svg")
+
+    context_instance = Context()
+    # collapse context_instance to a single dictionary for mako
+    context_dictionary = {}
+    context_instance['settings'] = settings
+    context_instance['EDX_ROOT_URL'] = settings.EDX_ROOT_URL
+
+    # In various testing contexts, there might not be a current request context.
+    request_context = get_template_request_context(request)
+    if request_context:
+        for item in request_context:
+            context_dictionary.update(item)
+    for item in context_instance:
+        context_dictionary.update(item)
+    if context:
+        context_dictionary.update(context)
+
+    # "Fix" CSRF token by evaluating the lazy object
+    KEY_CSRF_TOKENS = ('csrf_token', 'csrf')
+    for key in KEY_CSRF_TOKENS:
+        if key in context_dictionary:
+            context_dictionary[key] = unicode(context_dictionary[key])
+
+    # fetch the source and render template
+    template = lookup_template('main', template_name)
+    template_model = lookup_template('main', template_name_model)
+
+    modelsvg = template_model.source
+    modelsvg = svg_filter_model(modelsvg)
+
+    fulltemplate = template.source + modelsvg
+
+    template = Template(text = fulltemplate,
+                        output_encoding='utf-8',
+                        input_encoding='utf-8',
+                        default_filters=['decode.utf8'],
+                        encoding_errors='replace' )
+
+    return template.render_unicode(**context_dictionary)
 
 def render_cert_by_uuid(request, certificate_uuid):
     """

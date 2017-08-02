@@ -25,18 +25,6 @@ def svg_filter_model(svgstringin):
 
     return __get_append_to_model() + __basic_filter(svgstringin, xslstring)
 
-def svg_filter_signatory(svgstringin):
-    """
-    This function is used both in the command helper and when generating mako template for the SVG model
-    It places description field with mako scripts inside the related flowtext or textspan
-    This way we can still edit the model with Inkscape and manage placeholder whilst using "fake" text to jugdge on the
-    final result
-    """
-    xslstring = __get_xsl_string_signatory()
-
-    return __basic_filter(svgstringin, xslstring)
-
-
 def __basic_filter(svgstringin,xslstring):
     """
     This function is used both in the command helper and when generating mako template for the SVG model
@@ -97,12 +85,22 @@ def __get_xsl_string_model():
         </xsl:copy>
     </xsl:template>
 
+    <xsl:template match="svg:g[@inkscape:label='#signatory']" mode="replacedesc">
+<xsl:text>&#10;</xsl:text><xsl:value-of select="./svg:desc/text()"/><xsl:text>&#10;</xsl:text>
+        <xsl:copy>
+            <xsl:apply-templates select="@*|node()">
+            </xsl:apply-templates>
+        </xsl:copy>
+<xsl:text>&#10;</xsl:text>% endif<xsl:text>&#10;</xsl:text>
+    </xsl:template>
+
     <xsl:template match="//svg:flowPara/text()" mode="replacedesc">
          <xsl:param name="nodedesc" />
          <xsl:value-of select="$nodedesc"/>
     </xsl:template>
 
     <xsl:template match="svg:desc" mode="replacedesc"/>
+    
 
     <xsl:template match="@*|node()" mode="replacedesc">
         <xsl:param name="nodedesc" />
@@ -112,67 +110,12 @@ def __get_xsl_string_model():
             </xsl:apply-templates>
         </xsl:copy>
     </xsl:template>
+    
     """
     return __get_xsl_string_basic(xslbody)
 
 def __get_append_to_model():
-    return """
-    <%inherit file="basic-model.html">
-"""
-
-def __get_xsl_string_signatory():
-    xslbody =  """
-    <xsl:output  omit-xml-declaration="yes" standalone="yes" method="xml" indent="yes"/>
-    
-    <xsl:template match="//svg:g">
-        <xsl:copy>
-             <xsl:apply-templates select="node()" mode="modeg"/>
-        </xsl:copy>
-    </xsl:template>
-
-
-    <xsl:template match="@*|node()" mode="modeg">
-       <xsl:copy>
-            <xsl:choose>
-                <xsl:when test="./svg:desc">
-                     <xsl:apply-templates select="@*|node()" mode='replacedesc'>
-                          <xsl:with-param name="nodedesc" select="./svg:desc/text()"/>
-                    </xsl:apply-templates>
-                </xsl:when>
-                <xsl:otherwise>
-                            <xsl:apply-templates select="@*|node()" mode="modeg"/>
-                </xsl:otherwise>
-            </xsl:choose>
-        </xsl:copy>
-    </xsl:template>
-        
-    <xsl:template match="//svg:flowPara/text()" mode="replacedesc">
-         <xsl:param name="nodedesc" />
-         <xsl:value-of select="$nodedesc"/>
-    </xsl:template>
-
-    <xsl:template match="svg:desc" mode="replacedesc"/>
-
-    <xsl:template match="//svg:image/@xlink:href" mode="replacedesc">
-        <xsl:param name="nodedesc" />
-        <xsl:attribute name="xlink:href">
-         <xsl:value-of select="$nodedesc"/>
-        </xsl:attribute> 
-    </xsl:template>
-
-
-    <xsl:template match="@*|node()" mode="replacedesc">
-        <xsl:param name="nodedesc" />
-        <xsl:copy>
-            <xsl:apply-templates select="@*|node()" mode="replacedesc">
-                <xsl:with-param name="nodedesc" select="$nodedesc"/>
-            </xsl:apply-templates>
-        </xsl:copy>
-    </xsl:template>
-    """
-    return __get_xsl_string_basic(xslbody)
-
-
+    return """"""
 
 def __get_xsl_string_basic(xslbody):
     return """<?xml version="1.0" encoding="UTF-8"?>
