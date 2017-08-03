@@ -21,7 +21,7 @@ course_mode_class = course_mode if course_mode else ''
             <span class="deco-corner deco-corner-tr"></span>
             <span class="deco-corner deco-corner-bl"></span>
             <span class="deco-corner deco-corner-br"></span>
-            <img src="${reverse('certificates:certificate_png_view', args=[accomplishment_user_id, accomplishment_course_id] )}" alt="${_("Certificate Image")}"/>
+            <img class="accomplishment-rendering-image" src="${reverse('certificates:certificate_png_view', args=[accomplishment_user_id, accomplishment_course_id] )}" alt="${_("Certificate Image")}"/>
         </div>
     </div>
     <div class="wrapper-accomplishment-pdf">

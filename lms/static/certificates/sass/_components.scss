@@ -321,6 +321,10 @@
     .accomplishment-signatories-title {
         @extend %rendering-hd-section;
     }
+    .accomplishment-rendering-image {
+        display: block;
+        margin: auto;
+    }
 }
 
 // metadata
