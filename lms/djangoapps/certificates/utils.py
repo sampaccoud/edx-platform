@@ -16,6 +16,7 @@ from xmodule.contentstore.content import StaticContentStream, StaticContent
 from xmodule.contentstore.django import contentstore
 import base64
 from xmodule.exceptions import NotFoundError
+import requests
 
 log = logging.getLogger(__name__)
 
@@ -52,24 +53,30 @@ def svg_converter(svgstringin, content_type="image/png"):
         flowtext
         """
     convertedvalstring = ''
-    convertedvalstring = __convert_via_inkscape(svgstringin, content_type)
+    convertedvalstring = __convert_via_svg_converter_server(svgstringin, content_type)
     #convertedvalstring = cairosvg.surface.PDFSurface.convert(svgstringin)
     return convertedvalstring
 
-def __convert_via_inkscape(stringin, content_type="image/png"):
-    infile =  NamedTemporaryFile(delete=True)
-    outfile = NamedTemporaryFile(delete=True)
-    infile.write(stringin)
-    infile.flush()
-    exportarg = '--export-png='
-    if content_type == "image/png":
-        exportarg = '--export-png='
-    elif content_type == "application/pdf":
-        exportarg = '--export-pdf='
-    subprocess.call(['inkscape', '-z','--export-background=#FFFFFF','--file=' + infile.name, exportarg + outfile.name])
-    stringout = outfile.read()
-    infile.close()
-    outfile.close()
+def __convert_via_svg_converter_server(stringin, content_type="image/png"):
+    stringout = ''
+    if settings.SVG_CONVERTER_SERVER and settings.SVG_CONVERTER_SERVER_TOKEN:
+        try:
+            files = {'file': ('model.svg',stringin)}
+            headers = { 'Authorization': 'Token '+settings.SVG_CONVERTER_SERVER_TOKEN, }
+            url = settings.SVG_CONVERTER_SERVER+'/svgfiles/'
+            r = requests.post(url, files = files, headers = headers)
+            resp = r.json()
+            if "status" in resp and resp["status"]:
+                typeconv = 'png'
+                if content_type == 'application/pdf':
+                    typeconv =  'pdf'
+                url = settings.SVG_CONVERTER_SERVER + '/svgfiles/{0}/?transform={1}'.format(resp["identifier"], typeconv)
+                r = requests.get(url, headers=headers)
+                stringout = r.content
+        except Exception as e:
+            log.error('Impossible to contact the SVG converter server at "%s"', url)
+    else:
+        log.warning('No settings defined for the SVG converter server, define SVG_CONVERTER_SERVER and SVG_CONVERTER_SERVER_TOKEN')
     return stringout
 
 
